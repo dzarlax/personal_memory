@@ -224,10 +224,11 @@ Then configure your client with:
 | Header key | `Authorization` |
 | Header value | `Basic dXNlcjpwYXNz` (use your generated token) |
 
-**Claude Code** can do it in one command:
+**Claude Code** can do it in one command (add `--scope user` to make it available across all projects):
 ```bash
 claude mcp add --transport http personal-memory https://mcp.yourdomain.com/mcp \
-  --header "Authorization: Basic $(echo -n 'user:pass' | base64)"
+  --header "Authorization: Basic $(echo -n 'user:pass' | base64)" \
+  --scope user
 ```
 
 > **Note:** Claude Desktop does not support custom headers in MCP config — it only supports OAuth or authless servers. For Claude Desktop, use the local stdio mode (options 3+4 above).
