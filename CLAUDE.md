@@ -12,7 +12,10 @@ Self-hosted semantic memory infrastructure using:
 
 ## Architecture
 
+Two transport modes, same `memory_server.py`:
+
 ```
+# Mode 1: stdio (local, default)
 Claude Desktop / Claude Code
      │
      ▼ MCP (stdio)
@@ -20,9 +23,18 @@ memory_server.py  (FastMCP)
      │
      ├──▶ https://embed.<domain>   →  TEI (embeddings)
      └──▶ https://qdrant.<domain>  →  Qdrant (vector storage)
+
+# Mode 2: HTTP (remote, MCP_TRANSPORT=http)
+Claude Code / any HTTP MCP client
+     │
+     ▼ HTTPS → mcp.<domain>/mcp
+memory_server.py  (FastMCP, streamable-http)
+     │
+     ├──▶ https://embed.<domain>   →  TEI (embeddings)
+     └──▶ https://qdrant.<domain>  →  Qdrant (vector storage)
 ```
 
-Both services are behind Traefik with Basic Auth + Let's Encrypt.
+All three services are behind Traefik with Basic Auth + Let's Encrypt.
 
 ## MCP Tools
 
@@ -66,6 +78,10 @@ user          string    — from MEMORY_USER env var
 | `CACHE_TTL` | `60` | Search cache TTL in seconds |
 | `DEDUP_THRESHOLD` | `0.97` | Cosine similarity for dedup |
 | `CONTRADICTION_LOW` | `0.60` | Lower bound for contradiction warning |
+| `MCP_TRANSPORT` | `stdio` | Transport mode: `stdio` or `http` |
+| `MCP_PORT` | `8000` | HTTP port (only used when `MCP_TRANSPORT=http`) |
+| `QDRANT_URL` | `https://qdrant.<DOMAIN>` | Override Qdrant URL (e.g. internal Docker: `http://memory-qdrant:6333`) |
+| `EMBED_URL` | `https://embed.<DOMAIN>` | Override TEI URL (e.g. internal Docker: `http://memory-embeddings:80`) |
 
 Never hardcode credentials. Use `.env` file (excluded from git).
 
@@ -76,6 +92,9 @@ Never hardcode credentials. Use `.env` file (excluded from git).
 - `recall_count` is updated via `qdrant_set_payload` — no re-embedding needed
 - `forget_old` defaults to `dry_run=True` — safe by default
 - Point IDs are MD5 hashes of the fact text (first 8 hex chars as int)
+- Transport is selected via `MCP_TRANSPORT` env var; `stdio` is default, `http` enables streamable-http on `MCP_PORT`
+- In HTTP mode the server is stateless — in-memory cache (`_cache`) resets on container restart
+- When `QDRANT_URL` / `EMBED_URL` start with `http://`, Basic Auth is skipped (internal Docker networking, no Traefik in the path)
 
 ## Local Setup
 

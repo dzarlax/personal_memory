@@ -14,6 +14,10 @@ Self-hosted semantic memory for any MCP-compatible AI client. Stores and retriev
 
 ## Architecture
 
+`memory_server.py` supports two transport modes controlled by `MCP_TRANSPORT` env var:
+
+### Mode 1: stdio (local, default)
+
 ```mermaid
 graph TD
     Claude["Claude Desktop / Claude Code"]
@@ -32,6 +36,23 @@ graph TD
     MCP -->|"POST /embed"| TEI
     MCP -->|"search / upsert / delete"| Qdrant
     MCP <-->|"read/write"| Cache
+```
+
+### Mode 2: HTTP remote (MCP_TRANSPORT=http)
+
+```mermaid
+graph TD
+    Client["Claude Code / any HTTP MCP client"]
+
+    subgraph VPS["VPS (behind Traefik + Basic Auth)"]
+        MCP["mcp.<domain>/mcp\nmemory_server.py\n(FastMCP, streamable-http)"]
+        TEI["embed.<domain>\nTEI — embedding model"]
+        Qdrant["qdrant.<domain>\nQdrant — vector DB"]
+    end
+
+    Client -->|"HTTPS MCP"| MCP
+    MCP -->|"POST /embed"| TEI
+    MCP -->|"search / upsert / delete"| Qdrant
 ```
 
 Auth is handled by Traefik's Basic Auth middleware. `memory_server.py` passes credentials via `httpx.BasicAuth` — never embedded in URLs.
@@ -119,7 +140,7 @@ docker compose --env-file .env.vps up -d
 
 | Variable | Description |
 |---|---|
-| `MEMORY_DOMAIN` | Your domain, e.g. `example.com` — services at `embed.<domain>` and `qdrant.<domain>` |
+| `MEMORY_DOMAIN` | Your domain, e.g. `example.com` — services at `embed.<domain>`, `qdrant.<domain>`, `mcp.<domain>` |
 | `EMBED_MODEL` | HuggingFace model ID, default `intfloat/multilingual-e5-small` |
 
 Track TEI model download on first start:
@@ -160,8 +181,11 @@ nano .env
 | `CACHE_TTL` | Search cache TTL in seconds (default: `60`) |
 | `DEDUP_THRESHOLD` | Cosine similarity threshold for deduplication (default: `0.97`) |
 | `CONTRADICTION_LOW` | Lower bound for contradiction warning (default: `0.60`) |
+| `QDRANT_URL` | Override Qdrant URL (default: `https://qdrant.<DOMAIN>`) |
+| `EMBED_URL` | Override TEI URL (default: `https://embed.<DOMAIN>`) |
 
 **3. Claude Desktop config**
+
 
 | OS | Example file | Config location |
 |---|---|---|
@@ -170,7 +194,7 @@ nano .env
 
 Restart Claude Desktop after merging the config.
 
-**4. Claude Code (global)**
+**4. Claude Code — stdio (local)**
 
 Add to `~/.claude.json` under `mcpServers`:
 
@@ -180,6 +204,29 @@ Add to `~/.claude.json` under `mcpServers`:
   "args": ["/path/to/memory_server.py"]
 }
 ```
+
+**5. Claude Code — remote HTTP (no local Python needed)**
+
+After deploying the `memory-mcp` service on your VPS, run once:
+
+```bash
+claude mcp add --transport http personal-memory \
+  https://mcp.yourdomain.com/mcp \
+  --header "Authorization: Basic $(echo -n 'user:pass' | base64)"
+```
+
+Replace `yourdomain.com`, `user`, and `pass` with your values. That's it.
+
+> **Note:** Claude Desktop does not support custom headers in MCP config — it only supports OAuth or authless servers. For Claude Desktop, use the local stdio mode (options 3+4 above).
+
+## Security Notes
+
+| Risk | Severity | Notes |
+|---|---|---|
+| Credentials in `.mcp.json` | High | Use env var substitution (`${VAR}`); file is gitignored |
+| Qdrant accessible to all containers on `traefik` network | Medium | Standard Docker trust model; isolate with a separate internal network if needed |
+| 32-bit point ID space (MD5 truncation) | Low | Collisions possible beyond ~65k facts; duplicate text silently overwrites existing point |
+| Sync HTTP calls in async HTTP mode | Low | Blocks event loop under concurrent requests; not an issue for personal single-user use |
 
 ## Collection
 

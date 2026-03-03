@@ -18,17 +18,22 @@ CACHE_TTL = int(os.getenv("CACHE_TTL", "60"))
 DEDUP_THRESHOLD = float(os.getenv("DEDUP_THRESHOLD", "0.97"))
 CONTRADICTION_LOW = float(os.getenv("CONTRADICTION_LOW", "0.60"))
 
-auth = httpx.BasicAuth(USER, PASS)
+QDRANT_URL = os.getenv("QDRANT_URL", f"https://qdrant.{DOMAIN}")
+EMBED_URL = os.getenv("EMBED_URL", f"https://embed.{DOMAIN}")
+
+def _auth_for(url: str) -> httpx.BasicAuth | None:
+    """Use Basic Auth only for external HTTPS URLs (Traefik); skip for internal Docker networking."""
+    return httpx.BasicAuth(USER, PASS) if url.startswith("https://") else None
 
 qdrant = httpx.Client(
-    base_url=f"https://qdrant.{DOMAIN}",
-    auth=auth,
+    base_url=QDRANT_URL,
+    auth=_auth_for(QDRANT_URL),
     timeout=10.0,
 )
 
 embedder = httpx.Client(
-    base_url=f"https://embed.{DOMAIN}",
-    auth=auth,
+    base_url=EMBED_URL,
+    auth=_auth_for(EMBED_URL),
     timeout=15.0,
 )
 
@@ -587,4 +592,9 @@ def import_facts(facts: list[dict]) -> str:
 
 if __name__ == "__main__":
     _init_collection()
-    mcp.run()
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    if transport == "http":
+        port = int(os.getenv("MCP_PORT", "8000"))
+        mcp.run(transport="streamable-http", host="0.0.0.0", port=port)
+    else:
+        mcp.run()

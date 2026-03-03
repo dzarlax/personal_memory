@@ -36,6 +36,34 @@ services:
       - "traefik.http.routers.memory-qdrant.middlewares=traefik-auth"
       - "traefik.http.services.memory-qdrant.loadbalancer.server.port=6333"
 
+  memory-mcp:
+    image: python:3.12-slim
+    container_name: memory-mcp
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./memory_server.py:/app/memory_server.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - pip_cache:/root/.cache/pip
+    command: >
+      sh -c "pip install -r requirements.txt -q && python memory_server.py"
+    env_file: .env
+    environment:
+      - MCP_TRANSPORT=http
+      - MCP_PORT=8000
+      - QDRANT_URL=http://memory-qdrant:6333
+      - EMBED_URL=http://memory-embeddings:80
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.memory-mcp.entrypoints=https"
+      - "traefik.http.routers.memory-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`)"
+      - "traefik.http.routers.memory-mcp.tls=true"
+      - "traefik.http.routers.memory-mcp.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.memory-mcp.middlewares=traefik-auth"
+      - "traefik.http.services.memory-mcp.loadbalancer.server.port=8000"
+
 volumes:
   qdrant_storage:
     driver: local
@@ -43,6 +71,8 @@ volumes:
       type: none
       o: bind
       device: /root/memory/qdrant_storage
+
+  pip_cache:
 
   # --- Uncomment if you don't have Traefik yet ---
   # traefik:
