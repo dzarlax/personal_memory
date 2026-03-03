@@ -5,6 +5,7 @@ import httpx
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 load_dotenv()
 
@@ -596,6 +597,10 @@ if __name__ == "__main__":
     if transport == "http":
         mcp.settings.host = "0.0.0.0"
         mcp.settings.port = int(os.getenv("MCP_PORT", "8000"))
+        # Disable DNS rebinding protection — server runs behind Traefik with Basic Auth
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
+        )
         mcp.run(transport="streamable-http")
     else:
         mcp.run()
