@@ -205,17 +205,32 @@ Add to `~/.claude.json` under `mcpServers`:
 }
 ```
 
-**5. Claude Code — remote HTTP (no local Python needed)**
+**5. Any HTTP MCP client — remote HTTP (no local Python needed)**
 
-After deploying the `memory-mcp` service on your VPS, run once:
+After deploying the `memory-mcp` service on your VPS:
 
+First, generate your Base64 token:
 ```bash
-claude mcp add --transport http personal-memory \
-  https://mcp.yourdomain.com/mcp \
-  --header "Authorization: Basic $(echo -n 'user:pass' | base64)"
+echo -n 'user:pass' | base64
+# → dXNlcjpwYXNz
 ```
 
-Replace `yourdomain.com`, `user`, and `pass` with your values. That's it.
+Then configure your client with:
+
+| Field | Value |
+|---|---|
+| Type | Streamable HTTP |
+| URL | `https://mcp.yourdomain.com/mcp` |
+| Header key | `Authorization` |
+| Header value | `Basic dXNlcjpwYXNz` (use your generated token) |
+
+**Claude Code** can do it in one command:
+```bash
+claude mcp add --transport http \
+  --header "Authorization: Basic $(echo -n 'user:pass' | base64)" \
+  personal-memory \
+  https://mcp.yourdomain.com/mcp
+```
 
 > **Note:** Claude Desktop does not support custom headers in MCP config — it only supports OAuth or authless servers. For Claude Desktop, use the local stdio mode (options 3+4 above).
 
