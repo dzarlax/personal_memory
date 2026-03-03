@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 load_dotenv()
 
 USER = os.environ["MEMORY_USER"]
-PASS = os.environ["MEMORY_PASS"]
+PASS = os.getenv("MEMORY_PASS", "")
 DOMAIN = os.environ["MEMORY_DOMAIN"]
 
 COLLECTION = "memory"
