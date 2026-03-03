@@ -226,10 +226,8 @@ Then configure your client with:
 
 **Claude Code** can do it in one command:
 ```bash
-claude mcp add --transport http \
-  --header "Authorization: Basic $(echo -n 'user:pass' | base64)" \
-  personal-memory \
-  https://mcp.yourdomain.com/mcp
+claude mcp add --transport http personal-memory https://mcp.yourdomain.com/mcp \
+  --header "Authorization: Basic $(echo -n 'user:pass' | base64)"
 ```
 
 > **Note:** Claude Desktop does not support custom headers in MCP config — it only supports OAuth or authless servers. For Claude Desktop, use the local stdio mode (options 3+4 above).
