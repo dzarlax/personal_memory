@@ -1,6 +1,6 @@
 # Personal Memory Stack
 
-Self-hosted semantic memory for any MCP-compatible AI client. Stores and retrieves facts using vector embeddings — no third-party cloud, all data stays on your VPS.
+Self-hosted semantic memory + Todoist integration for any MCP-compatible AI client. Stores and retrieves facts using vector embeddings, and exposes Todoist as a server-side MCP tool — no third-party cloud auth needed, all credentials stay on your VPS.
 
 ## Stack
 
@@ -10,7 +10,7 @@ Self-hosted semantic memory for any MCP-compatible AI client. Stores and retriev
 | [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) | Local embedding model server |
 | [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) | Embedding model (multilingual, ~470MB) |
 | [FastMCP](https://github.com/jlowin/fastmcp) | MCP server bridging Claude with the stack |
-| Traefik v3 | Reverse proxy, SSL, Basic Auth |
+| Traefik v3 | Reverse proxy, SSL, Basic Auth, path routing |
 
 ## Architecture
 
@@ -45,17 +45,23 @@ graph TD
     Client["Claude Code / any HTTP MCP client"]
 
     subgraph VPS["VPS (behind Traefik + Basic Auth)"]
-        MCP["mcp.<domain>/mcp\nmemory_server.py\n(FastMCP, streamable-http)"]
+        MemoryMCP["mcp.<domain>/memory/mcp\nmemory_server.py\n(FastMCP, port 8000)"]
+        TodoistMCP["mcp.<domain>/todoist/mcp\ntodoist_server.py\n(FastMCP, port 8001)"]
         TEI["embed.<domain>\nTEI — embedding model"]
         Qdrant["qdrant.<domain>\nQdrant — vector DB"]
+        TodoistAPI["api.todoist.com\nTodoist REST API v1"]
     end
 
-    Client -->|"HTTPS MCP"| MCP
-    MCP -->|"POST /embed"| TEI
-    MCP -->|"search / upsert / delete"| Qdrant
+    Client -->|"HTTPS /memory/mcp"| MemoryMCP
+    Client -->|"HTTPS /todoist/mcp"| TodoistMCP
+    MemoryMCP -->|"POST /embed"| TEI
+    MemoryMCP -->|"search / upsert / delete"| Qdrant
+    TodoistMCP -->|"REST API"| TodoistAPI
 ```
 
-Auth is handled by Traefik's Basic Auth middleware. `memory_server.py` passes credentials via `httpx.BasicAuth` — never embedded in URLs.
+Traefik rewrites paths before forwarding: `/memory(.*)` → `/mcp$1`, `/todoist(.*)` → `/mcp$1`. FastMCP always serves at `/mcp`.
+
+Auth is handled by Traefik's Basic Auth middleware. `TODOIST_TOKEN` lives in `.env.vps` on the server — never passed by the client.
 
 ## Data Model
 
@@ -84,7 +90,7 @@ classDiagram
 
 ## MCP Tools
 
-### Writing
+### memory_server.py — Writing
 
 | Tool | Description |
 |---|---|
@@ -94,7 +100,7 @@ classDiagram
 | `forget_old(days?, namespace?, dry_run?)` | Delete facts older than N days. Skips `permanent=true`. Default: `dry_run=true`. |
 | `import_facts(facts)` | Bulk import from a list of dicts (e.g. from `export_facts`). Deduplicates on import. |
 
-### Reading
+### memory_server.py — Reading
 
 | Tool | Description |
 |---|---|
@@ -104,6 +110,18 @@ classDiagram
 | `get_stats()` | Total counts, namespace breakdown, tag distribution, most recalled facts. |
 | `list_tags(namespace?)` | All unique tags with usage counts. |
 | `export_facts(namespace?)` | Export all facts as JSON for backup or migration. |
+
+### todoist_server.py
+
+| Tool | Description |
+|---|---|
+| `get_projects()` | List all Todoist projects with IDs. |
+| `get_labels()` | List all personal labels with IDs. |
+| `get_tasks(project_id?, filter?, limit?)` | List active tasks. `filter` uses Todoist filter syntax (e.g. `today`, `overdue`, `#Work`, `@label`). Tasks show labels in output. |
+| `create_task(content, project_id?, due_string?, priority?, labels?)` | Create a task. `labels` is a list of label names, e.g. `["work"]`. Priority 1–4. |
+| `complete_task(task_id)` | Mark a task as complete. |
+| `update_task(task_id, content?, due_string?, priority?, labels?)` | Update an existing task. Pass `labels=[]` to clear all labels. |
+| `delete_task(task_id)` | Delete a task permanently. |
 
 ### Tool flow
 
@@ -117,6 +135,13 @@ flowchart LR
     update_fact -->|"delete old + upsert new"| Qdrant
     export_facts --> JSON
     import_facts --> store_fact
+
+    get_labels -->|"REST API"| Todoist
+    get_tasks -->|"REST API"| Todoist
+    create_task -->|"REST API"| Todoist
+    complete_task -->|"REST API"| Todoist
+    update_task -->|"REST API"| Todoist
+    delete_task -->|"REST API"| Todoist
 ```
 
 ## Prerequisites (VPS)
@@ -143,10 +168,11 @@ docker compose --env-file .env.vps up -d
 |---|---|
 | `MEMORY_DOMAIN` | Your domain, e.g. `example.com` — services at `embed.<domain>`, `qdrant.<domain>`, `mcp.<domain>` |
 | `EMBED_MODEL` | HuggingFace model ID, default `intfloat/multilingual-e5-small` |
+| `TODOIST_TOKEN` | Todoist API token — get it at Settings → Integrations → Developer |
 | `KEEP_SNAPSHOTS` | Number of snapshots to retain (default: `7`) |
 | `BACKUP_INTERVAL_HOURS` | How often the backup service runs (default: `24`) |
 
-This starts 4 services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`, and `memory-backup` (automatic snapshots).
+This starts 5 services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`, `todoist-mcp`, and `memory-backup` (automatic snapshots).
 
 Track TEI model download on first start:
 ```bash
@@ -242,7 +268,7 @@ Add to `~/.claude.json` under `mcpServers`:
 
 **5. Any HTTP MCP client — remote HTTP (no local Python needed)**
 
-After deploying the `memory-mcp` service on your VPS:
+After deploying services on your VPS:
 
 First, generate your Base64 token:
 ```bash
@@ -250,19 +276,25 @@ echo -n 'user:pass' | base64
 # → dXNlcjpwYXNz
 ```
 
-Then configure your client with:
+Then configure your client. Two separate MCP servers:
 
-| Field | Value |
-|---|---|
-| Type | Streamable HTTP |
-| URL | `https://mcp.yourdomain.com/mcp` |
-| Header key | `Authorization` |
-| Header value | `Basic dXNlcjpwYXNz` (use your generated token) |
+| Field | Memory | Todoist |
+|---|---|---|
+| Type | Streamable HTTP | Streamable HTTP |
+| URL | `https://mcp.yourdomain.com/memory/mcp` | `https://mcp.yourdomain.com/todoist/mcp` |
+| Header key | `Authorization` | `Authorization` |
+| Header value | `Basic dXNlcjpwYXNz` | `Basic dXNlcjpwYXNz` |
 
-**Claude Code** can do it in one command (add `--scope user` to make it available across all projects):
+**Claude Code** — add both with one command each (add `--scope user` to make available across all projects):
 ```bash
-claude mcp add --transport http personal-memory https://mcp.yourdomain.com/mcp \
-  --header "Authorization: Basic $(echo -n 'user:pass' | base64)" \
+TOKEN=$(echo -n 'user:pass' | base64)
+
+claude mcp add --transport http personal-memory https://mcp.yourdomain.com/memory/mcp \
+  --header "Authorization: Basic $TOKEN" \
+  --scope user
+
+claude mcp add --transport http todoist https://mcp.yourdomain.com/todoist/mcp \
+  --header "Authorization: Basic $TOKEN" \
   --scope user
 ```
 
