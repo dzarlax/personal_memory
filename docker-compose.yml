@@ -85,11 +85,41 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.memory-mcp.entrypoints=https"
-      - "traefik.http.routers.memory-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`)"
+      - "traefik.http.routers.memory-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`) && PathPrefix(`/memory`)"
       - "traefik.http.routers.memory-mcp.tls=true"
       - "traefik.http.routers.memory-mcp.tls.certresolver=letsEncrypt"
-      - "traefik.http.routers.memory-mcp.middlewares=traefik-auth"
+      - "traefik.http.routers.memory-mcp.middlewares=traefik-auth,memory-rewrite"
+      - "traefik.http.middlewares.memory-rewrite.replacepathregex.regex=/memory(.*)"
+      - "traefik.http.middlewares.memory-rewrite.replacepathregex.replacement=/mcp$$1"
       - "traefik.http.services.memory-mcp.loadbalancer.server.port=8000"
+
+  todoist-mcp:
+    image: python:3.12-slim
+    container_name: todoist-mcp
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./todoist_server.py:/app/todoist_server.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - pip_cache:/root/.cache/pip
+    command: >
+      sh -c "pip install -r requirements.txt -q && python todoist_server.py"
+    env_file: .env.vps
+    environment:
+      - MCP_TRANSPORT=http
+      - MCP_PORT=8001
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.todoist-mcp.entrypoints=https"
+      - "traefik.http.routers.todoist-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`) && PathPrefix(`/todoist`)"
+      - "traefik.http.routers.todoist-mcp.tls=true"
+      - "traefik.http.routers.todoist-mcp.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.todoist-mcp.middlewares=traefik-auth,todoist-rewrite"
+      - "traefik.http.middlewares.todoist-rewrite.replacepathregex.regex=/todoist(.*)"
+      - "traefik.http.middlewares.todoist-rewrite.replacepathregex.replacement=/mcp$$1"
+      - "traefik.http.services.todoist-mcp.loadbalancer.server.port=8001"
 
 volumes:
   qdrant_storage:
