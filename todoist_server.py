@@ -6,7 +6,9 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 load_dotenv()
 
-TODOIST_TOKEN = os.environ["TODOIST_TOKEN"]
+TODOIST_TOKEN = os.getenv("TODOIST_TOKEN", "")
+if not TODOIST_TOKEN:
+    raise SystemExit("TODOIST_TOKEN environment variable is required")
 
 mcp = FastMCP("todoist")
 

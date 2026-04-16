@@ -10,21 +10,13 @@ import uvicorn
 
 load_dotenv()
 
-DOMAIN = os.environ.get("MEMORY_DOMAIN", "")
 COLLECTION = "memory"
-QDRANT_URL = os.getenv("QDRANT_URL", f"https://qdrant.{DOMAIN}")
-USER = os.environ.get("MEMORY_USER", "")
-PASS = os.environ.get("MEMORY_PASS", "")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://memory-qdrant:6333")
 
 SIMILARITY_THRESHOLD = float(os.getenv("VIZ_SIMILARITY_THRESHOLD", "0.85"))
 MAX_EDGES = int(os.getenv("VIZ_MAX_EDGES", "500"))
 
-
-def _auth_for(url: str) -> httpx.BasicAuth | None:
-    return httpx.BasicAuth(USER, PASS) if url.startswith("https://") else None
-
-
-qdrant = httpx.Client(base_url=QDRANT_URL, auth=_auth_for(QDRANT_URL), timeout=30.0)
+qdrant = httpx.Client(base_url=QDRANT_URL, timeout=30.0)
 
 
 def scroll_all(with_vector: bool = False) -> list[dict]:

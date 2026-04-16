@@ -18,12 +18,15 @@ def main():
     procs.append(subprocess.Popen([sys.executable, "memory_server.py"]))
 
     if os.getenv("ENABLE_TODOIST", "").lower() in ("1", "true", "yes"):
-        port = os.getenv("TODOIST_MCP_PORT", "8001")
-        logger.info("Starting todoist_server.py on port %s", port)
-        procs.append(subprocess.Popen(
-            [sys.executable, "todoist_server.py"],
-            env={**os.environ, "MCP_PORT": port},
-        ))
+        if not os.getenv("TODOIST_TOKEN"):
+            logger.warning("ENABLE_TODOIST=true but TODOIST_TOKEN not set, skipping")
+        else:
+            port = os.getenv("TODOIST_MCP_PORT", "8001")
+            logger.info("Starting todoist_server.py on port %s", port)
+            procs.append(subprocess.Popen(
+                [sys.executable, "todoist_server.py"],
+                env={**os.environ, "MCP_PORT": port},
+            ))
 
     if os.getenv("ENABLE_VIZ", "").lower() in ("1", "true", "yes"):
         port = os.getenv("VIZ_PORT", "8080")

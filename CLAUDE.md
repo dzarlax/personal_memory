@@ -61,9 +61,8 @@ user          string    — from MEMORY_USER env var
 
 | Variable | Default | Description |
 |---|---|---|
-| `MEMORY_USER` | required | Basic Auth username |
-| `MEMORY_PASS` | required | Basic Auth password |
-| `MEMORY_DOMAIN` | required | Domain — MCP at `mcp.<domain>` |
+| `MEMORY_USER` | `claude` | Username stored in fact metadata |
+| `MEMORY_DOMAIN` | required | Domain — MCP at `mcp.<domain>` (used by Traefik labels) |
 | `ENABLE_TODOIST` | `false` | Enable Todoist MCP server |
 | `ENABLE_VIZ` | `false` | Enable visualization dashboard |
 | `TODOIST_TOKEN` | — | Todoist API token (only when `ENABLE_TODOIST=true`) |
@@ -84,7 +83,7 @@ Never hardcode credentials. Use `.env` file (excluded from git).
 - `recall_count` is updated via `qdrant_set_payload` — no re-embedding needed
 - `forget_old` defaults to `dry_run=True` — safe by default
 - Point IDs are UUID5 (deterministic, based on fact text) — collision-safe 128-bit space
-- When `QDRANT_URL` / `EMBED_URL` start with `http://`, Basic Auth is skipped (internal Docker networking)
+- TEI and Qdrant accessed via internal Docker network (no auth needed)
 - Backup runs as a daemon thread (`_backup_loop`): snapshots Qdrant every `BACKUP_INTERVAL_HOURS`, prunes old snapshots
 
 ### todoist_server.py

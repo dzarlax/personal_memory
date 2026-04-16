@@ -13,34 +13,18 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-USER = os.environ["MEMORY_USER"]
-PASS = os.getenv("MEMORY_PASS", "")
-DOMAIN = os.environ["MEMORY_DOMAIN"]
+USER = os.getenv("MEMORY_USER", "claude")
 
 COLLECTION = "memory"
-EMBED_MODEL = os.getenv("EMBED_MODEL", "google/embeddinggemma-300m")
 CACHE_TTL = int(os.getenv("CACHE_TTL", "60"))
 DEDUP_THRESHOLD = float(os.getenv("DEDUP_THRESHOLD", "0.97"))
 CONTRADICTION_LOW = float(os.getenv("CONTRADICTION_LOW", "0.60"))
 
-QDRANT_URL = os.getenv("QDRANT_URL", f"https://qdrant.{DOMAIN}")
-EMBED_URL = os.getenv("EMBED_URL", f"https://embed.{DOMAIN}")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://memory-qdrant:6333")
+EMBED_URL = os.environ.get("EMBED_URL", "http://memory-embeddings:80")
 
-def _auth_for(url: str) -> httpx.BasicAuth | None:
-    """Use Basic Auth only for external HTTPS URLs (Traefik); skip for internal Docker networking."""
-    return httpx.BasicAuth(USER, PASS) if url.startswith("https://") else None
-
-qdrant = httpx.Client(
-    base_url=QDRANT_URL,
-    auth=_auth_for(QDRANT_URL),
-    timeout=10.0,
-)
-
-embedder = httpx.Client(
-    base_url=EMBED_URL,
-    auth=_auth_for(EMBED_URL),
-    timeout=15.0,
-)
+qdrant = httpx.Client(base_url=QDRANT_URL, timeout=10.0)
+embedder = httpx.Client(base_url=EMBED_URL, timeout=15.0)
 
 _cache: dict[str, tuple[float, list]] = {}
 
