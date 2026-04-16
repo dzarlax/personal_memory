@@ -3,11 +3,10 @@
 import os
 import logging
 import threading
-import time
 
 import uvicorn
 from starlette.applications import Starlette
-from starlette.routing import Mount, Route
+from starlette.routing import Mount
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,14 +28,15 @@ if os.getenv("ENABLE_TODOIST", "").lower() in ("1", "true", "yes"):
         logger.info("Todoist MCP enabled")
 
 # --- Conditionally load viz ---
-viz_routes: list[Route] = []
+viz_app = None
 if os.getenv("ENABLE_VIZ", "").lower() in ("1", "true", "yes"):
-    from viz_server import app as viz_app
+    from viz_server import app as _viz_app
+    viz_app = _viz_app
     logger.info("Visualization dashboard enabled at /viz")
 
 
 def build_app() -> Starlette:
-    routes: list[Mount | Route] = []
+    routes: list[Mount] = []
 
     # Memory MCP — always on
     memory_mcp.settings.stateless_http = True
@@ -50,7 +50,7 @@ def build_app() -> Starlette:
         routes.append(Mount("/todoist", app=todoist_mcp.streamable_http_app()))
 
     # Viz — optional
-    if os.getenv("ENABLE_VIZ", "").lower() in ("1", "true", "yes"):
+    if viz_app is not None:
         routes.append(Mount("/viz", app=viz_app))
 
     return Starlette(routes=routes)

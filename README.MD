@@ -173,7 +173,7 @@ docker compose up -d
 | `BACKUP_INTERVAL_HOURS` | How often the backup runs (default: `24`) |
 | `VIZ_SIMILARITY_THRESHOLD` | Default similarity threshold for graph edges (default: `0.65`, only when `ENABLE_VIZ=true`) |
 
-Three Docker services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`. The `memory-mcp` container runs all Python services (memory, backup, and optionally todoist + viz) via `entrypoint.py`.
+Three Docker services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`. The `memory-mcp` container runs all Python services (memory, backup, and optionally todoist + viz) via `app.py`.
 
 Track TEI model download on first start:
 ```bash

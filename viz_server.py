@@ -6,7 +6,6 @@ from starlette.applications import Starlette
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 from dotenv import load_dotenv
-import uvicorn
 
 load_dotenv()
 
@@ -140,6 +139,3 @@ app = Starlette(routes=[
     Route("/api/graph", api_graph),
     Route("/api/duplicates", api_duplicates),
 ])
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("VIZ_PORT", "8080")))

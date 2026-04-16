@@ -7,7 +7,6 @@ import httpx
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-from mcp.server.transport_security import TransportSecuritySettings
 
 logger = logging.getLogger(__name__)
 
@@ -604,20 +603,3 @@ def _backup_loop():
                     logger.info("Deleted old snapshot: %s", old)
         except Exception:
             logger.exception("Backup failed")
-
-
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    _init_collection()
-
-    threading.Thread(target=_backup_loop, daemon=True).start()
-    logger.info("Backup scheduler started (every %dh)", BACKUP_INTERVAL // 3600)
-
-    mcp.settings.host = "0.0.0.0"
-    mcp.settings.port = int(os.getenv("MCP_PORT", "8000"))
-    mcp.settings.transport_security = TransportSecuritySettings(
-        enable_dns_rebinding_protection=False
-    )
-    mcp.run(transport="streamable-http")
