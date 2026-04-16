@@ -24,7 +24,7 @@ services:
       - traefik
 
   memory-mcp:
-    image: ghcr.io/dzarlax/personal-memory:latest
+    image: ghcr.io/dzarlax-ai/personal-memory:latest
     container_name: memory-mcp
     restart: always
     env_file: .env

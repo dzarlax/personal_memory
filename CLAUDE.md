@@ -105,7 +105,7 @@ Never hardcode credentials. Use `.env` file (excluded from git).
 - Conditionally loads todoist/viz based on env vars
 
 ### Common
-- All Python services run in one process/container (`ghcr.io/dzarlax/personal-memory`), built via GitHub Actions
+- All Python services run in one process/container (`ghcr.io/dzarlax-ai/personal-memory`), built via GitHub Actions
 - Single Traefik router — no path rewrites needed, app handles routing internally
 - Servers are stateless — in-memory cache resets on container restart
 - Snapshots land in `/qdrant/snapshots` → bind-mounted to `/root/memory/qdrant_snapshots` on the host
