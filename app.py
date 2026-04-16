@@ -3,6 +3,7 @@
 import os
 import logging
 import threading
+from contextlib import asynccontextmanager
 
 import uvicorn
 from starlette.applications import Starlette
@@ -37,23 +38,44 @@ if os.getenv("ENABLE_VIZ", "").lower() in ("1", "true", "yes"):
 
 def build_app() -> Starlette:
     routes: list[Mount] = []
+    session_managers = []
 
     # Memory MCP — always on
     memory_mcp.settings.stateless_http = True
     memory_mcp.settings.transport_security = None
-    routes.append(Mount("/memory", app=memory_mcp.streamable_http_app()))
+    memory_http = memory_mcp.streamable_http_app()
+    routes.append(Mount("/memory", app=memory_http))
+    session_managers.append(memory_mcp.session_manager)
 
     # Todoist MCP — optional
     if todoist_mcp is not None:
         todoist_mcp.settings.stateless_http = True
         todoist_mcp.settings.transport_security = None
-        routes.append(Mount("/todoist", app=todoist_mcp.streamable_http_app()))
+        todoist_http = todoist_mcp.streamable_http_app()
+        routes.append(Mount("/todoist", app=todoist_http))
+        session_managers.append(todoist_mcp.session_manager)
 
     # Viz — optional
     if viz_app is not None:
         routes.append(Mount("/viz", app=viz_app))
 
-    return Starlette(routes=routes)
+    @asynccontextmanager
+    async def lifespan(app):
+        async with contextmanager_stack(session_managers):
+            yield
+
+    return Starlette(routes=routes, lifespan=lifespan)
+
+
+@asynccontextmanager
+async def contextmanager_stack(managers):
+    """Nest multiple async context managers."""
+    if not managers:
+        yield
+        return
+    async with managers[0].run():
+        async with contextmanager_stack(managers[1:]):
+            yield
 
 
 if __name__ == "__main__":
