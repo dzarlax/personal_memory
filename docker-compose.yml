@@ -74,9 +74,8 @@ services:
       - pip_cache:/root/.cache/pip
     command: >
       sh -c "pip install -r requirements.txt -q && python memory_server.py"
-    env_file: .env.vps
+    env_file: .env
     environment:
-      - MCP_TRANSPORT=http
       - MCP_PORT=8000
       - QDRANT_URL=http://memory-qdrant:6333
       - EMBED_URL=http://memory-embeddings:80
@@ -104,9 +103,8 @@ services:
       - pip_cache:/root/.cache/pip
     command: >
       sh -c "pip install -r requirements.txt -q && python todoist_server.py"
-    env_file: .env.vps
+    env_file: .env
     environment:
-      - MCP_TRANSPORT=http
       - MCP_PORT=8001
     networks:
       - traefik

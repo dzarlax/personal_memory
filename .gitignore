@@ -1,5 +1,4 @@
 .env
-.env.vps
 venv/
 __pycache__/
 *.pyc

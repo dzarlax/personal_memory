@@ -60,7 +60,7 @@ The visualization dashboard provides two views:
 - **Graph** — interactive network where nodes are facts and edges represent semantic similarity (cosine distance above a configurable threshold). Node size reflects recall count, color represents namespace.
 - **Timeline** — facts plotted by creation date, grouped by namespace.
 
-Auth is handled by Traefik: Authentik ForwardAuth for browser access, Basic Auth as programmatic fallback. `TODOIST_TOKEN` lives in `.env.vps` on the server — never passed by the client.
+Auth is handled by Traefik: Authentik ForwardAuth for browser access, Basic Auth as programmatic fallback. `TODOIST_TOKEN` lives in `.env` on the server — never passed by the client.
 
 ## Data Model
 
@@ -156,12 +156,12 @@ flowchart LR
 ```bash
 mkdir -p /root/memory/qdrant_storage
 mkdir -p /root/memory/qdrant_snapshots
-cp .env.vps.example .env.vps
-nano .env.vps
-docker compose --env-file .env.vps up -d
+cp .env.example .env
+nano .env
+docker compose up -d
 ```
 
-`.env.vps` variables:
+`.env` variables:
 
 | Variable | Description |
 |---|---|
@@ -217,36 +217,7 @@ curl -X POST "https://qdrant.<your-domain>/collections/memory/snapshots/recover"
   -d '{"location": "file:///qdrant/snapshots/memory/<snapshot-name>.snapshot"}'
 ```
 
-## Local Setup
-
-**1. Python environment**
-
-```bash
-python3.12 -m venv venv
-venv/bin/pip install -r requirements.txt
-```
-
-**2. Credentials**
-
-```bash
-cp .env.example .env
-nano .env
-```
-
-`.env` variables:
-
-| Variable | Description |
-|---|---|
-| `MEMORY_USER` | Basic Auth username |
-| `MEMORY_PASS` | Basic Auth password |
-| `MEMORY_DOMAIN` | Your domain |
-| `CACHE_TTL` | Search cache TTL in seconds (default: `60`) |
-| `DEDUP_THRESHOLD` | Cosine similarity threshold for deduplication (default: `0.97`) |
-| `CONTRADICTION_LOW` | Lower bound for contradiction warning (default: `0.60`) |
-| `QDRANT_URL` | Override Qdrant URL (default: `https://qdrant.<DOMAIN>`) |
-| `EMBED_URL` | Override TEI URL (default: `https://embed.<DOMAIN>`) |
-
-**3. Connect an MCP client (remote HTTP — no local Python needed)**
+## Client Setup
 
 After deploying services on your VPS:
 

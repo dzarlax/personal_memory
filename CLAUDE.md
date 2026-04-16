@@ -116,12 +116,11 @@ Never hardcode credentials. Use `.env` file (excluded from git).
 - `memory-backup` service connects to Qdrant via `http://memory-qdrant:6333` (internal network, no auth); snapshots land in `/qdrant/snapshots` → bind-mounted to `/root/memory/qdrant_snapshots` on the host
 - Qdrant port `6333` is exposed on `127.0.0.1` only — for manual backup runs from the host (`backup.sh` with default `QDRANT_URL=http://localhost:6333`)
 
-## Local Setup
+## Setup
 
 ```bash
-python3.12 -m venv venv
-venv/bin/pip install -r requirements.txt
 cp .env.example .env  # fill in credentials
+docker compose up -d
 ```
 
 ## Verification

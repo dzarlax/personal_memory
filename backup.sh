@@ -17,10 +17,10 @@
 #
 # Usage:
 #   ./backup.sh
-#   ENV_FILE=/root/memory/.env.vps ./backup.sh
+#   ENV_FILE=/root/memory/.env ./backup.sh
 #
 # Cron example (daily at 03:00):
-#   0 3 * * * ENV_FILE=/root/memory/.env.vps /root/memory/backup.sh >> /var/log/qdrant-backup.log 2>&1
+#   0 3 * * * ENV_FILE=/root/memory/.env /root/memory/backup.sh >> /var/log/qdrant-backup.log 2>&1
 
 set -euo pipefail
 
