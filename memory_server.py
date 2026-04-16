@@ -593,14 +593,10 @@ def import_facts(facts: list[dict]) -> str:
 
 if __name__ == "__main__":
     _init_collection()
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
-    if transport == "http":
-        mcp.settings.host = "0.0.0.0"
-        mcp.settings.port = int(os.getenv("MCP_PORT", "8000"))
-        # Disable DNS rebinding protection — server runs behind Traefik with Basic Auth
-        mcp.settings.transport_security = TransportSecuritySettings(
-            enable_dns_rebinding_protection=False
-        )
-        mcp.run(transport="streamable-http")
-    else:
-        mcp.run()
+    mcp.settings.host = "0.0.0.0"
+    mcp.settings.port = int(os.getenv("MCP_PORT", "8000"))
+    # Disable DNS rebinding protection — server runs behind Traefik with Basic Auth
+    mcp.settings.transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    )
+    mcp.run(transport="streamable-http")

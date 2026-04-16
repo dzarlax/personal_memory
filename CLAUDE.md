@@ -12,29 +12,21 @@ Self-hosted semantic memory + Todoist integration infrastructure using:
 
 ## Architecture
 
-Two transport modes, two servers (`memory_server.py`, `todoist_server.py`):
+Three servers (`memory_server.py`, `todoist_server.py`, `viz_server.py`), all HTTP-only:
 
 ```
-# Mode 1: stdio (local, default)
-Claude Desktop / Claude Code
-     │
-     ├──▶ MCP (stdio) → memory_server.py
-     │         ├──▶ https://embed.<domain>   →  TEI (embeddings)
-     │         └──▶ https://qdrant.<domain>  →  Qdrant (vector storage)
-     │
-     └──▶ MCP (stdio) → todoist_server.py
-               └──▶ https://api.todoist.com  →  Todoist REST API
-
-# Mode 2: HTTP (remote, MCP_TRANSPORT=http)
 Claude Code / any HTTP MCP client
      │
      ├──▶ HTTPS → mcp.<domain>/memory/mcp  →  memory_server.py  (port 8000)
-     └──▶ HTTPS → mcp.<domain>/todoist/mcp →  todoist_server.py (port 8001)
+     ├──▶ HTTPS → mcp.<domain>/todoist/mcp →  todoist_server.py (port 8001)
+     └──▶ HTTPS → mcp.<domain>/viz         →  viz_server.py     (port 8080)
 ```
 
 Traefik uses `replacepathregex` middleware to rewrite `/memory(.*)` → `/mcp$1` and `/todoist(.*)` → `/mcp$1` before forwarding — FastMCP always serves at `/mcp`.
 
-All services are behind Traefik with Basic Auth + Let's Encrypt. A fifth service, `memory-backup`, runs inside Docker and creates Qdrant snapshots on a schedule — no cron needed.
+A visualization dashboard (`viz_server.py`) is available at `mcp.<domain>/viz` — interactive graph of fact relationships and a timeline view.
+
+All services are behind Traefik with Authentik SSO (browser) + Basic Auth (programmatic). A sixth service, `memory-backup`, runs inside Docker and creates Qdrant snapshots on a schedule — no cron needed.
 
 ## MCP Tools
 
@@ -79,12 +71,13 @@ user          string    — from MEMORY_USER env var
 | `CACHE_TTL` | `60` | Search cache TTL in seconds |
 | `DEDUP_THRESHOLD` | `0.97` | Cosine similarity for dedup |
 | `CONTRADICTION_LOW` | `0.60` | Lower bound for contradiction warning |
-| `MCP_TRANSPORT` | `stdio` | Transport mode: `stdio` or `http` |
 | `MCP_PORT` | `8000` / `8001` | HTTP port (`memory_server.py` uses 8000, `todoist_server.py` uses 8001) |
 | `QDRANT_URL` | `https://qdrant.<DOMAIN>` | Override Qdrant URL (e.g. internal Docker: `http://memory-qdrant:6333`) |
 | `EMBED_URL` | `https://embed.<DOMAIN>` | Override TEI URL (e.g. internal Docker: `http://memory-embeddings:80`) |
 | `KEEP_SNAPSHOTS` | `7` | Snapshots to retain (backup service) |
 | `BACKUP_INTERVAL_HOURS` | `24` | Backup frequency in hours (backup service) |
+| `VIZ_PORT` | `8080` | HTTP port for viz_server.py |
+| `VIZ_SIMILARITY_THRESHOLD` | `0.65` | Default cosine similarity threshold for graph edges |
 
 Never hardcode credentials. Use `.env` file (excluded from git).
 
@@ -106,10 +99,20 @@ Never hardcode credentials. Use `.env` file (excluded from git).
 - `/tasks` and `/projects` responses are paginated — results are in `results` key
 - Labels are strings (label names), not IDs — pass `labels: ["name1", "name2"]`
 
+### viz_server.py
+- Standalone Starlette app (not FastMCP) — serves HTML + JSON API
+- `GET /` — serves `static/index.html` (vis.js graph + timeline)
+- `GET /api/graph?threshold=0.65` — scrolls all facts with vectors from Qdrant, computes pairwise cosine similarity, returns nodes + edges
+- `GET /api/facts` — scrolls all facts without vectors (lightweight, for timeline)
+- Queries Qdrant directly via `QDRANT_URL` — no dependency on memory_server.py
+- Separate `requirements-viz.txt` (starlette, uvicorn, httpx, python-dotenv)
+- Auth handled by Traefik (Authentik ForwardAuth) — no app-level auth needed
+- Traefik strips `/viz` prefix before forwarding (`stripprefix` middleware)
+
 ### Common
-- Transport is selected via `MCP_TRANSPORT` env var; `stdio` is default, `http` enables streamable-http on `MCP_PORT`
-- In HTTP mode Traefik rewrites `/memory(.*)` → `/mcp$1` and `/todoist(.*)` → `/mcp$1` — FastMCP always serves at `/mcp`
-- In HTTP mode servers are stateless — in-memory cache resets on container restart
+- Servers use streamable-http transport on `MCP_PORT`
+- Traefik rewrites `/memory(.*)` → `/mcp$1` and `/todoist(.*)` → `/mcp$1` — FastMCP always serves at `/mcp`
+- Servers are stateless — in-memory cache resets on container restart
 - `memory-backup` service connects to Qdrant via `http://memory-qdrant:6333` (internal network, no auth); snapshots land in `/qdrant/snapshots` → bind-mounted to `/root/memory/qdrant_snapshots` on the host
 - Qdrant port `6333` is exposed on `127.0.0.1` only — for manual backup runs from the host (`backup.sh` with default `QDRANT_URL=http://localhost:6333`)
 

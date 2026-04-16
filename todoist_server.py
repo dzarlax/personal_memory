@@ -200,13 +200,9 @@ def delete_task(task_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
-    if transport == "http":
-        mcp.settings.host = "0.0.0.0"
-        mcp.settings.port = int(os.getenv("MCP_PORT", "8001"))
-        mcp.settings.transport_security = TransportSecuritySettings(
-            enable_dns_rebinding_protection=False
-        )
-        mcp.run(transport="streamable-http")
-    else:
-        mcp.run()
+    mcp.settings.host = "0.0.0.0"
+    mcp.settings.port = int(os.getenv("MCP_PORT", "8001"))
+    mcp.settings.transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=False
+    )
+    mcp.run(transport="streamable-http")

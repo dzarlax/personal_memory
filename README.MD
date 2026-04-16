@@ -10,35 +10,12 @@ Self-hosted semantic memory + Todoist integration for any MCP-compatible AI clie
 | [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference) | Local embedding model server |
 | [intfloat/multilingual-e5-small](https://huggingface.co/intfloat/multilingual-e5-small) | Embedding model (multilingual, ~470MB) |
 | [FastMCP](https://github.com/jlowin/fastmcp) | MCP server bridging Claude with the stack |
-| Traefik v3 | Reverse proxy, SSL, Basic Auth, path routing |
+| [vis.js](https://visjs.org/) | Interactive graph and timeline visualization |
+| Traefik v3 | Reverse proxy, SSL, Basic Auth / Authentik SSO, path routing |
 
 ## Architecture
 
-`memory_server.py` supports two transport modes controlled by `MCP_TRANSPORT` env var:
-
-### Mode 1: stdio (local, default)
-
-```mermaid
-graph TD
-    Claude["Claude Desktop / Claude Code"]
-
-    subgraph Local["Local Machine"]
-        MCP["memory_server.py\n(FastMCP, stdio)"]
-        Cache["In-memory cache\n(CACHE_TTL seconds)"]
-    end
-
-    subgraph VPS["VPS (behind Traefik + Basic Auth)"]
-        TEI["embed.<domain>\nTEI — embedding model"]
-        Qdrant["qdrant.<domain>\nQdrant — vector DB"]
-    end
-
-    Claude -->|"MCP tools"| MCP
-    MCP -->|"POST /embed"| TEI
-    MCP -->|"search / upsert / delete"| Qdrant
-    MCP <-->|"read/write"| Cache
-```
-
-### Mode 2: HTTP remote (MCP_TRANSPORT=http)
+All servers run as HTTP-only (streamable-http transport) behind Traefik:
 
 ```mermaid
 graph TD
@@ -47,6 +24,7 @@ graph TD
     subgraph VPS["VPS (behind Traefik + Basic Auth)"]
         MemoryMCP["mcp.<domain>/memory/mcp\nmemory_server.py\n(FastMCP, port 8000)"]
         TodoistMCP["mcp.<domain>/todoist/mcp\ntodoist_server.py\n(FastMCP, port 8001)"]
+        Viz["mcp.<domain>/viz\nviz_server.py\n(Starlette, port 8080)"]
         TEI["embed.<domain>\nTEI — embedding model"]
         Qdrant["qdrant.<domain>\nQdrant — vector DB"]
         TodoistAPI["api.todoist.com\nTodoist REST API v1"]
@@ -54,14 +32,35 @@ graph TD
 
     Client -->|"HTTPS /memory/mcp"| MemoryMCP
     Client -->|"HTTPS /todoist/mcp"| TodoistMCP
+    Client -->|"HTTPS /viz"| Viz
     MemoryMCP -->|"POST /embed"| TEI
     MemoryMCP -->|"search / upsert / delete"| Qdrant
+    Viz -->|"scroll + vectors"| Qdrant
     TodoistMCP -->|"REST API"| TodoistAPI
 ```
 
 Traefik rewrites paths before forwarding: `/memory(.*)` → `/mcp$1`, `/todoist(.*)` → `/mcp$1`. FastMCP always serves at `/mcp`.
 
-Auth is handled by Traefik's Basic Auth middleware. `TODOIST_TOKEN` lives in `.env.vps` on the server — never passed by the client.
+### Visualization (`mcp.<domain>/viz`)
+
+```mermaid
+graph TD
+    Browser["Browser"]
+
+    subgraph VPS["VPS (behind Traefik + Authentik SSO)"]
+        Viz["mcp.<domain>/viz\nviz_server.py\n(Starlette, port 8080)"]
+        Qdrant["qdrant.<domain>\nQdrant — vector DB"]
+    end
+
+    Browser -->|"HTTPS /viz"| Viz
+    Viz -->|"scroll + vectors"| Qdrant
+```
+
+The visualization dashboard provides two views:
+- **Graph** — interactive network where nodes are facts and edges represent semantic similarity (cosine distance above a configurable threshold). Node size reflects recall count, color represents namespace.
+- **Timeline** — facts plotted by creation date, grouped by namespace.
+
+Auth is handled by Traefik: Authentik ForwardAuth for browser access, Basic Auth as programmatic fallback. `TODOIST_TOKEN` lives in `.env.vps` on the server — never passed by the client.
 
 ## Data Model
 
@@ -172,7 +171,9 @@ docker compose --env-file .env.vps up -d
 | `KEEP_SNAPSHOTS` | Number of snapshots to retain (default: `7`) |
 | `BACKUP_INTERVAL_HOURS` | How often the backup service runs (default: `24`) |
 
-This starts 5 services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`, `todoist-mcp`, and `memory-backup` (automatic snapshots).
+| `VIZ_SIMILARITY_THRESHOLD` | Default similarity threshold for graph edges (default: `0.65`) |
+
+This starts 6 services: `memory-embeddings`, `memory-qdrant`, `memory-mcp`, `todoist-mcp`, `memory-viz`, and `memory-backup` (automatic snapshots).
 
 Track TEI model download on first start:
 ```bash
@@ -245,28 +246,7 @@ nano .env
 | `QDRANT_URL` | Override Qdrant URL (default: `https://qdrant.<DOMAIN>`) |
 | `EMBED_URL` | Override TEI URL (default: `https://embed.<DOMAIN>`) |
 
-**3. Claude Desktop config**
-
-
-| OS | Example file | Config location |
-|---|---|---|
-| macOS | `claude_desktop_config.mac.json` | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Windows | `claude_desktop_config.windows.json` | `%APPDATA%\Claude\claude_desktop_config.json` |
-
-Restart Claude Desktop after merging the config.
-
-**4. Claude Code — stdio (local)**
-
-Add to `~/.claude.json` under `mcpServers`:
-
-```json
-"personal-memory": {
-  "command": "/path/to/venv/bin/python3.12",
-  "args": ["/path/to/memory_server.py"]
-}
-```
-
-**5. Any HTTP MCP client — remote HTTP (no local Python needed)**
+**3. Connect an MCP client (remote HTTP — no local Python needed)**
 
 After deploying services on your VPS:
 
@@ -298,8 +278,6 @@ claude mcp add --transport http todoist https://mcp.yourdomain.com/todoist/mcp \
   --scope user
 ```
 
-> **Note:** Claude Desktop does not support custom headers in MCP config — it only supports OAuth or authless servers. For Claude Desktop, use the local stdio mode (options 3+4 above).
-
 ## Security Notes
 
 | Risk | Severity | Notes |
@@ -307,6 +285,16 @@ claude mcp add --transport http todoist https://mcp.yourdomain.com/todoist/mcp \
 | Credentials in `.mcp.json` | High | Use env var substitution (`${VAR}`); file is gitignored |
 | Qdrant accessible to all containers on `traefik` network | Medium | Standard Docker trust model; isolate with a separate internal network if needed |
 | Sync HTTP calls in async HTTP mode | Low | Blocks event loop under concurrent requests; not an issue for personal single-user use |
+
+## Visualization Dashboard
+
+After deployment, open `https://mcp.<your-domain>/viz` in a browser (requires Authentik SSO login).
+
+Features:
+- **Graph view** — interactive force-directed graph (vis.js Network). Nodes = facts, edges = cosine similarity above threshold. Node size = recall count, color = namespace, thick border = permanent fact. Adjust similarity threshold with a slider.
+- **Timeline view** — facts plotted on a timeline (vis.js Timeline), grouped by namespace. Zoom and pan to explore.
+- **Filters** — filter by namespace, click tags to toggle filtering, adjust similarity threshold.
+- **Detail panel** — click any fact to see full text, namespace, tags, creation date, recall count.
 
 ## Collection
 
