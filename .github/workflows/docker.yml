@@ -8,6 +8,7 @@ on:
       - "requirements.txt"
       - "Dockerfile"
       - "static/**"
+      - ".github/workflows/docker.yml"
 
 jobs:
   build:
