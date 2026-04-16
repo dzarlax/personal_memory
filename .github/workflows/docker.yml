@@ -4,14 +4,25 @@ on:
   push:
     branches: [main]
     paths:
-      - "*.py"
-      - "requirements.txt"
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
       - "Dockerfile"
-      - "static/**"
+      - "internal/viz/static/**"
       - ".github/workflows/docker.yml"
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - run: go test ./...
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

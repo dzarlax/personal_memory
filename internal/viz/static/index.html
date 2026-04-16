@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Dashboard</title>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+<link href="https://unpkg.com/vis-timeline@7.7.3/styles/vis-timeline-graph2d.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2129;
+    --border: #30363d; --text: #e6edf3; --text-muted: #8b949e;
+    --accent: #58a6ff; --green: #7ee787; --red: #ff7b72;
+    --orange: #ffa657; --purple: #d2a8ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .stats { font-size: 13px; color: var(--text-muted); display: flex; gap: 16px; }
+  .stat-num { color: var(--accent); font-weight: 600; }
+
+  .tabs {
+    display: flex; gap: 0; flex-shrink: 0;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px; cursor: pointer; font-size: 13px;
+    color: var(--text-muted); border-bottom: 2px solid transparent;
+    background: none; border-top: none; border-left: none; border-right: none;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .badge {
+    display: inline-block; margin-left: 6px; padding: 1px 6px;
+    border-radius: 8px; font-size: 11px; background: var(--border); color: var(--text-muted);
+  }
+
+  .view { flex: 1; display: none; overflow: auto; padding: 20px; min-height: 0; }
+  .view.active { display: flex; flex-direction: column; }
+  .view-full { padding: 0; overflow: hidden; }
+
+  /* Treemap */
+  .treemap { display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; }
+  .treemap-ns {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; min-width: 200px; flex: 1;
+  }
+  .treemap-ns h3 { font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .treemap-ns .ns-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .treemap-ns .ns-count { color: var(--text-muted); font-weight: 400; font-size: 13px; }
+  .treemap-projects { display: flex; flex-wrap: wrap; gap: 6px; }
+  .treemap-tile {
+    border-radius: 6px; padding: 8px 12px; font-size: 12px;
+    cursor: default; position: relative; transition: transform 0.1s;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .treemap-tile:hover { transform: scale(1.05); cursor: pointer; }
+  .treemap-tile .tile-name { font-weight: 600; }
+  .treemap-tile .tile-count { font-size: 11px; opacity: 0.7; }
+
+  /* Duplicates */
+  .dup-list { display: flex; flex-direction: column; gap: 8px; }
+  .dup-pair {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .dup-score {
+    font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    align-self: flex-start;
+  }
+  .dup-score.high { background: var(--red); color: var(--bg); }
+  .dup-score.medium { background: var(--orange); color: var(--bg); }
+  .dup-facts { display: flex; gap: 12px; }
+  .dup-facts > div {
+    flex: 1; font-size: 13px; line-height: 1.5; padding: 8px; border-radius: 6px; background: var(--bg);
+  }
+  .dup-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Forgotten */
+  .forgotten-list { display: flex; flex-direction: column; gap: 4px; }
+  .forgotten-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; font-size: 13px; line-height: 1.4;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  }
+  .forgotten-item .fact-text { flex: 1; }
+  .forgotten-item .meta-col {
+    flex-shrink: 0; text-align: right; font-size: 11px; color: var(--text-muted);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+
+  /* Heatmap */
+  .heatmap-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 18px);
+    gap: 3px;
+  }
+  .heatmap-cell {
+    width: 16px; height: 16px; border-radius: 3px;
+    background: var(--surface); cursor: default; position: relative;
+  }
+  .heatmap-cell[title]:hover { outline: 1px solid var(--text-muted); }
+  .heatmap-months { display: flex; gap: 4px; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+
+  /* Graph */
+  #graph-container { width: 100%; flex: 1; min-height: 0; }
+  .graph-controls {
+    display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .graph-controls label { font-size: 13px; color: var(--text-muted); }
+  .graph-controls select, .graph-controls input[type="range"] {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 8px; font-size: 13px;
+  }
+  .graph-controls input[type="range"] { width: 100px; }
+  .threshold-val { font-size: 13px; color: var(--accent); min-width: 36px; }
+
+  .legend {
+    position: absolute; bottom: 12px; left: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; z-index: 10; font-size: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .legend-item:last-child { margin-bottom: 0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .detail-panel {
+    position: absolute; top: 12px; right: 12px; width: 340px; max-height: calc(100% - 24px);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; overflow-y: auto; display: none; z-index: 10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .detail-panel.visible { display: block; }
+  .detail-panel h3 { font-size: 14px; margin-bottom: 8px; color: var(--accent); }
+  .detail-panel .fact-text { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+  .detail-panel .meta { font-size: 12px; color: var(--text-muted); }
+  .detail-panel .meta span { display: inline-block; margin-right: 12px; margin-bottom: 4px; }
+  .detail-panel .close-btn {
+    position: absolute; top: 8px; right: 12px;
+    background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;
+  }
+  .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+
+  .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text-muted); }
+  .spinner { width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Timeline overrides */
+  .vis-timeline { border: none !important; }
+  .vis-item { border-radius: 6px !important; font-size: 12px !important; }
+  .vis-item .vis-item-content { padding: 4px 8px !important; }
+  .vis-panel.vis-bottom, .vis-panel.vis-center, .vis-panel.vis-left, .vis-panel.vis-right { border-color: var(--border) !important; }
+  .vis-time-axis .vis-text { fill: var(--text-muted) !important; color: var(--text-muted) !important; }
+  .vis-time-axis .vis-grid.vis-minor { border-color: #21262d !important; }
+  .vis-time-axis .vis-grid.vis-major { border-color: var(--border) !important; }
+  .vis-labelset .vis-label { color: var(--text) !important; }
+  .vis-panel.vis-background, .vis-panel.vis-center { background: var(--bg) !important; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Memory Dashboard</h1>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="overview">Overview</button>
+    <button class="tab" data-view="duplicates">Duplicates <span class="badge" id="dup-badge">...</span></button>
+    <button class="tab" data-view="forgotten">Forgotten <span class="badge" id="forgot-badge">...</span></button>
+    <button class="tab" data-view="timeline">Timeline</button>
+    <button class="tab" data-view="graph">Graph</button>
+  </div>
+
+  <!-- Overview -->
+  <div class="view active" id="overview-view">
+    <div class="section-title">Knowledge Map</div>
+    <div class="section-sub">Size reflects fact count. Color = namespace.</div>
+    <div class="treemap" id="treemap"></div>
+  </div>
+
+  <!-- Duplicates -->
+  <div class="view" id="duplicates-view">
+    <div class="section-title">Near-Duplicate Facts</div>
+    <div class="section-sub">Pairs with cosine similarity > 0.90. Consider merging or deleting one.</div>
+    <div id="dup-content"><div class="loading"><div class="spinner"></div>Scanning for duplicates...</div></div>
+  </div>
+
+  <!-- Forgotten -->
+  <div class="view" id="forgotten-view">
+    <div class="section-title">Never Recalled</div>
+    <div class="section-sub">Facts with recall_count = 0. If they're never useful, consider removing them.</div>
+    <div class="forgotten-list" id="forgotten-list"></div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="view view-full" id="timeline-view">
+    <div id="timeline-container" style="flex:1;"></div>
+  </div>
+
+  <!-- Graph -->
+  <div class="view view-full" id="graph-view" style="position:relative;">
+    <div class="graph-controls">
+      <label>Namespace:</label>
+      <select id="ns-filter"><option value="">All</option></select>
+      <label>Similarity:</label>
+      <input type="range" id="threshold" min="0.50" max="0.99" step="0.01" value="0.85">
+      <span class="threshold-val" id="threshold-val">0.85</span>
+      <span id="tag-filter-label" style="display:none;font-size:13px;color:var(--orange)"></span>
+      <button id="clear-tag-filter" style="display:none;background:var(--border);color:var(--text);border:none;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer">clear</button>
+    </div>
+    <div id="graph-container"></div>
+    <div class="legend" id="legend"></div>
+    <div class="detail-panel" id="detail-panel">
+      <button class="close-btn" id="detail-close">&times;</button>
+      <h3>Fact Details</h3>
+      <div class="fact-text" id="detail-text"></div>
+      <div class="meta" id="detail-meta"></div>
+    </div>
+  </div>
+
+<script>
+const BASE = '/viz';
+const NS_COLORS = {};
+const PALETTE = ['#58a6ff','#f78166','#7ee787','#d2a8ff','#ffa657','#79c0ff','#ff7b72','#56d364','#bc8cff','#e3b341'];
+let colorIdx = 0;
+function nsColor(ns) {
+  if (!NS_COLORS[ns]) NS_COLORS[ns] = PALETTE[colorIdx++ % PALETTE.length];
+  return NS_COLORS[ns];
+}
+
+// Project tags we recognize
+const PROJECT_TAGS = new Set([
+  'personal-assistant','personal-memory','personal-ai-stack','rss-summariser',
+  'health','finance','clinics','meta-enricher','city-dashboard','homedash',
+  'jerkyvault','spotify-mcp','todoist-bot','insights','pm-enforcement','clui-cc'
+]);
+
+function getProjectTag(tags) {
+  for (const t of (tags || [])) {
+    if (PROJECT_TAGS.has(t)) return t;
+  }
+  return null;
+}
+
+let factsData = null;
+let graphDataCache = null;
+let network = null;
+let timeline = null;
+let graphFilter = { namespace: '', projectTag: '' };
+
+// --- Tabs ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    const view = tab.dataset.view;
+    document.getElementById(view + '-view').classList.add('active');
+    if (view === 'duplicates' && !document.querySelector('.dup-pair')) loadDuplicates();
+    if (view === 'timeline' && !timeline) loadTimeline();
+    if (view === 'graph' && !network) loadGraph();
+  });
+});
+
+function navigateToGraph(namespace, projectTag) {
+  graphFilter = { namespace: namespace || '', projectTag: projectTag || '' };
+  // Switch to graph tab
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelector('[data-view="graph"]').classList.add('active');
+  document.getElementById('graph-view').classList.add('active');
+  // Set namespace filter
+  const sel = document.getElementById('ns-filter');
+  sel.value = namespace || '';
+  loadGraph();
+}
+
+// --- Load all facts ---
+async function loadFacts() {
+  const res = await fetch(`${BASE}/api/facts`);
+  factsData = await res.json();
+  renderStats(factsData.nodes);
+  renderTreemap(factsData.nodes);
+  renderForgotten(factsData.nodes);
+  renderHeatmap(factsData.nodes);
+}
+
+function renderStats(nodes) {
+  const ns = [...new Set(nodes.map(n => n.namespace))].length;
+  const permanent = nodes.filter(n => n.permanent).length;
+  const neverRecalled = nodes.filter(n => n.recall_count === 0).length;
+  document.getElementById('stats').innerHTML = `
+    <span><span class="stat-num">${nodes.length}</span> facts</span>
+    <span><span class="stat-num">${ns}</span> namespaces</span>
+    <span><span class="stat-num">${permanent}</span> permanent</span>
+    <span><span class="stat-num">${neverRecalled}</span> never recalled</span>
+  `;
+  document.getElementById('forgot-badge').textContent = neverRecalled;
+}
+
+// --- Treemap ---
+function renderTreemap(nodes) {
+  const container = document.getElementById('treemap');
+  const nsByNs = {};
+  nodes.forEach(n => {
+    if (!nsByNs[n.namespace]) nsByNs[n.namespace] = {};
+    const proj = getProjectTag(n.tags) || '_general';
+    if (!nsByNs[n.namespace][proj]) nsByNs[n.namespace][proj] = 0;
+    nsByNs[n.namespace][proj]++;
+  });
+
+  container.innerHTML = '';
+  const sorted = Object.entries(nsByNs).sort((a, b) => {
+    const countA = Object.values(a[1]).reduce((s, v) => s + v, 0);
+    const countB = Object.values(b[1]).reduce((s, v) => s + v, 0);
+    return countB - countA;
+  });
+
+  for (const [ns, projects] of sorted) {
+    const total = Object.values(projects).reduce((s, v) => s + v, 0);
+    const color = nsColor(ns);
+    const div = document.createElement('div');
+    div.className = 'treemap-ns';
+    div.style.flex = `${Math.max(total / 10, 1)}`;
+
+    const projectsSorted = Object.entries(projects).sort((a, b) => b[1] - a[1]);
+    const tiles = projectsSorted.map(([proj, count]) => {
+      const size = Math.max(60 + count * 8, 60);
+      const alpha = proj === '_general' ? '33' : '55';
+      const name = proj === '_general' ? 'general' : proj;
+      const tag = proj === '_general' ? '' : proj;
+      return `<div class="treemap-tile" style="background:${color}${alpha};min-width:${size}px"
+        onclick="navigateToGraph('${ns}', '${tag}')">
+        <span class="tile-name">${name}</span>
+        <span class="tile-count">${count} fact${count > 1 ? 's' : ''}</span>
+      </div>`;
+    }).join('');
+
+    div.innerHTML = `
+      <h3><span class="ns-dot" style="background:${color}"></span> ${ns} <span class="ns-count">${total}</span></h3>
+      <div class="treemap-projects">${tiles}</div>
+    `;
+    container.appendChild(div);
+  }
+}
+
+// --- Duplicates ---
+async function loadDuplicates() {
+  const res = await fetch(`${BASE}/api/duplicates?threshold=0.90`);
+  const data = await res.json();
+  const container = document.getElementById('dup-content');
+  document.getElementById('dup-badge').textContent = data.pairs.length;
+
+  if (data.pairs.length === 0) {
+    container.innerHTML = '<div class="empty-state">No near-duplicates found. Memory is clean!</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="dup-list">' + data.pairs.map(p => {
+    const scoreClass = p.similarity >= 0.95 ? 'high' : 'medium';
+    const scoreLabel = p.similarity >= 0.97 ? 'near-identical' : p.similarity >= 0.95 ? 'very similar' : 'similar';
+    return `<div class="dup-pair">
+      <div class="dup-score ${scoreClass}">${(p.similarity * 100).toFixed(1)}% — ${scoreLabel}</div>
+      <div class="dup-facts">
+        <div>
+          ${p.a.text.slice(0, 200)}${p.a.text.length > 200 ? '...' : ''}
+          <div class="dup-meta">${p.a.namespace} | ${(p.a.tags || []).join(', ')} | recalls: ${p.a.recall_count}</div>
+        </div>
+        <div>
+          ${p.b.text.slice(0, 200)}${p.b.text.length > 200 ? '...' : ''}
+          <div class="dup-meta">${p.b.namespace} | ${(p.b.tags || []).join(', ')} | recalls: ${p.b.recall_count}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// --- Forgotten ---
+function renderForgotten(nodes) {
+  const forgotten = nodes.filter(n => n.recall_count === 0)
+    .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  const container = document.getElementById('forgotten-list');
+
+  if (forgotten.length === 0) {
+    container.innerHTML = '<div class="empty-state">All facts have been recalled at least once!</div>';
+    return;
+  }
+
+  container.innerHTML = forgotten.map(n => {
+    const date = (n.created_at || '').slice(0, 10);
+    const proj = getProjectTag(n.tags);
+    return `<div class="forgotten-item">
+      <div class="fact-text">${n.text.slice(0, 200)}${n.text.length > 200 ? '...' : ''}</div>
+      <div class="meta-col">
+        <span style="color:${nsColor(n.namespace)}">${n.namespace}</span>
+        ${proj ? `<span>${proj}</span>` : ''}
+        <span>${date}</span>
+        ${n.permanent ? '<span style="color:var(--orange)">permanent</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- Heatmap ---
+function renderHeatmap(nodes) {
+  // Will be rendered inside overview after treemap
+  const container = document.getElementById('treemap');
+  const datesMap = {};
+  nodes.forEach(n => {
+    const d = (n.created_at || '').slice(0, 10);
+    if (d) datesMap[d] = (datesMap[d] || 0) + 1;
+  });
+
+  const dates = Object.keys(datesMap).sort();
+  if (dates.length === 0) return;
+
+  const first = new Date(dates[0]);
+  const last = new Date(dates[dates.length - 1]);
+  const maxCount = Math.max(...Object.values(datesMap));
+
+  let cells = '';
+  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().slice(0, 10);
+    const count = datesMap[key] || 0;
+    const intensity = count > 0 ? Math.min(0.3 + (count / maxCount) * 0.7, 1) : 0;
+    const color = count > 0 ? `rgba(88, 166, 255, ${intensity})` : 'var(--surface2)';
+    cells += `<div class="heatmap-cell" style="background:${color}" title="${key}: ${count} facts"></div>`;
+  }
+
+  const heatDiv = document.createElement('div');
+  heatDiv.style.marginTop = '24px';
+  heatDiv.innerHTML = `
+    <div class="section-title" style="margin-bottom:8px">Activity</div>
+    <div class="heatmap-grid">${cells}</div>
+  `;
+  container.appendChild(heatDiv);
+}
+
+// --- Timeline ---
+async function loadTimeline() {
+  if (!factsData) return;
+  const nodes = factsData.nodes.filter(n => n.created_at);
+  const namespaces = [...new Set(nodes.map(n => n.namespace))].sort();
+  const groups = new vis.DataSet();
+  namespaces.forEach(ns => groups.add({ id: ns, content: ns, style: `color:${nsColor(ns)};` }));
+
+  const items = new vis.DataSet(nodes.map((n, i) => ({
+    id: i,
+    content: n.text.length > 80 ? n.text.slice(0, 80) + '...' : n.text,
+    title: n.text,
+    start: n.created_at,
+    group: n.namespace,
+    style: `background-color:${nsColor(n.namespace)};color:#0d1117;border-color:${nsColor(n.namespace)};`,
+  })));
+
+  const container = document.getElementById('timeline-container');
+  timeline = new vis.Timeline(container, items, groups, {
+    stack: true, showCurrentTime: true,
+    zoomMin: 86400000, zoomMax: 86400000 * 365,
+    orientation: 'top', margin: { item: 4 },
+    tooltip: { followMouse: true, overflowMethod: 'cap' },
+  });
+  timeline.fit();
+}
+
+// --- Graph ---
+async function loadGraph() {
+  const threshold = document.getElementById('threshold').value;
+  const res = await fetch(`${BASE}/api/graph?threshold=${threshold}`);
+  graphDataCache = await res.json();
+
+  populateNsFilter(graphDataCache.nodes);
+  // Show/hide tag filter label
+  const tagLabel = document.getElementById('tag-filter-label');
+  const clearBtn = document.getElementById('clear-tag-filter');
+  if (graphFilter.projectTag) {
+    tagLabel.textContent = `#${graphFilter.projectTag}`;
+    tagLabel.style.display = '';
+    clearBtn.style.display = '';
+  } else {
+    tagLabel.style.display = 'none';
+    clearBtn.style.display = 'none';
+  }
+  renderGraphVis(graphDataCache);
+}
+
+function populateNsFilter(nodes) {
+  const sel = document.getElementById('ns-filter');
+  const namespaces = [...new Set(nodes.map(n => n.namespace))].sort();
+  sel.innerHTML = '<option value="">All</option>';
+  namespaces.forEach(ns => {
+    const opt = document.createElement('option');
+    opt.value = ns; opt.textContent = ns;
+    sel.appendChild(opt);
+  });
+}
+
+function renderGraphVis(graphData) {
+  const nsVal = document.getElementById('ns-filter').value;
+  let filtered = graphData.nodes;
+  if (nsVal) filtered = filtered.filter(n => n.namespace === nsVal);
+  if (graphFilter.projectTag) {
+    filtered = filtered.filter(n => (n.tags || []).includes(graphFilter.projectTag));
+  }
+  const filteredIds = new Set(filtered.map(n => n.id));
+
+  const namespaces = [...new Set(filtered.map(n => n.namespace))];
+  const clusterRadius = 300 + filtered.length * 2;
+  const nsPositions = {};
+  namespaces.forEach((ns, i) => {
+    const angle = (2 * Math.PI * i) / namespaces.length - Math.PI / 2;
+    nsPositions[ns] = { x: Math.cos(angle) * clusterRadius, y: Math.sin(angle) * clusterRadius };
+  });
+
+  const visNodes = filtered.map(n => {
+    const center = nsPositions[n.namespace];
+    const spread = 60 + Math.sqrt(filtered.filter(f => f.namespace === n.namespace).length) * 12;
+    return {
+      id: n.id, label: '', title: n.text,
+      x: center.x + (Math.random() - 0.5) * spread,
+      y: center.y + (Math.random() - 0.5) * spread,
+      color: { background: nsColor(n.namespace), border: nsColor(n.namespace),
+        highlight: { background: '#fff', border: nsColor(n.namespace) },
+        hover: { background: '#fff', border: nsColor(n.namespace) } },
+      font: { color: '#e6edf3', size: 12, strokeWidth: 3, strokeColor: '#0d1117' },
+      size: 8 + Math.min(n.recall_count, 15),
+      borderWidth: n.permanent ? 3 : 1, shape: 'dot', _data: n,
+    };
+  });
+
+  namespaces.forEach(ns => {
+    const center = nsPositions[ns];
+    const count = filtered.filter(n => n.namespace === ns).length;
+    visNodes.push({
+      id: '__label__' + ns, label: `${ns} (${count})`,
+      x: center.x, y: center.y - 50 - Math.sqrt(count) * 8,
+      fixed: true, shape: 'text', physics: false,
+      font: { color: nsColor(ns), size: 16, bold: true, strokeWidth: 4, strokeColor: '#0d1117' },
+      size: 0, _data: null,
+    });
+  });
+
+  const visEdges = graphData.edges.filter(e => filteredIds.has(e.from) && filteredIds.has(e.to))
+    .map(e => ({ from: e.from, to: e.to, value: e.similarity,
+      color: { color: 'rgba(88,166,255,0.12)', highlight: 'rgba(88,166,255,0.4)' } }));
+
+  const container = document.getElementById('graph-container');
+  const data = { nodes: new vis.DataSet(visNodes), edges: new vis.DataSet(visEdges) };
+
+  if (network) network.destroy();
+  network = new vis.Network(container, data, {
+    layout: { improvedLayout: false },
+    physics: { enabled: true, solver: 'barnesHut',
+      barnesHut: { gravitationalConstant: -3000, centralGravity: 0.5, springLength: 120, springConstant: 0.02, damping: 0.3 },
+      stabilization: { iterations: 100, updateInterval: 50 } },
+    interaction: { hover: true, tooltipDelay: 200, zoomView: true, dragView: true },
+    nodes: { borderWidth: 1, shadow: false },
+    edges: { smooth: false, scaling: { min: 0.5, max: 2 } },
+  });
+
+  network.once('stabilizationIterationsDone', () => {
+    network.setOptions({ physics: false });
+    network.fit({ animation: false });
+    // Legend
+    const nsCounts = {};
+    filtered.forEach(n => nsCounts[n.namespace] = (nsCounts[n.namespace] || 0) + 1);
+    document.getElementById('legend').innerHTML = Object.entries(nsCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([ns, c]) => `<div class="legend-item"><span class="legend-dot" style="background:${nsColor(ns)}"></span>${ns} ${c}</div>`)
+      .join('');
+  });
+
+  network.on('hoverNode', p => {
+    const node = visNodes.find(n => n.id === p.node);
+    if (node && node._data) {
+      const short = node._data.text.length > 60 ? node._data.text.slice(0, 60) + '...' : node._data.text;
+      data.nodes.update({ id: p.node, label: short });
+    }
+  });
+  network.on('blurNode', p => { data.nodes.update({ id: p.node, label: '' }); });
+
+  network.on('click', p => {
+    if (p.nodes.length > 0 && !String(p.nodes[0]).startsWith('__label__')) {
+      const node = visNodes.find(n => n.id === p.nodes[0]);
+      if (node && node._data) showDetail(node._data);
+    } else { hideDetail(); }
+  });
+}
+
+function showDetail(fact) {
+  document.getElementById('detail-text').textContent = fact.text;
+  document.getElementById('detail-meta').innerHTML = `
+    <span style="color:${nsColor(fact.namespace)}">${fact.namespace}</span>
+    ${(fact.tags || []).map(t => `<span>#${t}</span>`).join('')}<br>
+    <span>Created: ${(fact.created_at || '').slice(0, 10)}</span>
+    <span>Recalls: ${fact.recall_count}</span>
+    ${fact.permanent ? '<span style="color:var(--orange)">Permanent</span>' : ''}
+  `;
+  document.getElementById('detail-panel').classList.add('visible');
+}
+function hideDetail() { document.getElementById('detail-panel').classList.remove('visible'); }
+document.getElementById('detail-close').addEventListener('click', hideDetail);
+
+document.getElementById('clear-tag-filter').addEventListener('click', () => {
+  graphFilter.projectTag = '';
+  if (graphDataCache) {
+    document.getElementById('tag-filter-label').style.display = 'none';
+    document.getElementById('clear-tag-filter').style.display = 'none';
+    renderGraphVis(graphDataCache);
+  }
+});
+
+document.getElementById('threshold').addEventListener('input', e => {
+  document.getElementById('threshold-val').textContent = e.target.value;
+});
+document.getElementById('threshold').addEventListener('change', loadGraph);
+document.getElementById('ns-filter').addEventListener('change', () => {
+  graphFilter.projectTag = '';
+  loadGraph();
+});
+
+// --- Init ---
+loadFacts();
+</script>
+</body>
+</html>

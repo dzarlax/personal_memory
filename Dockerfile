@@ -1,11 +1,14 @@
-FROM python:3.12-slim
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN CGO_ENABLED=0 go build -o /personal-memory ./cmd/server
 
-COPY *.py ./
-COPY static/ ./static/
+FROM alpine:3.21
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /personal-memory /personal-memory
 
-CMD ["python", "app.py"]
+ENTRYPOINT ["/personal-memory"]

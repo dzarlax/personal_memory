@@ -40,11 +40,17 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
+      # MCP endpoints — no Traefik auth, app checks X-API-Key
       - "traefik.http.routers.memory-mcp.entrypoints=https"
-      - "traefik.http.routers.memory-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`)"
+      - "traefik.http.routers.memory-mcp.rule=Host(`mcp.${MEMORY_DOMAIN}`) && (PathPrefix(`/memory`) || PathPrefix(`/todoist`) || Path(`/health`))"
       - "traefik.http.routers.memory-mcp.tls.certresolver=letsEncrypt"
-      - "traefik.http.routers.memory-mcp.middlewares=traefik-auth"
       - "traefik.http.services.memory-mcp.loadbalancer.server.port=8000"
+      # Viz dashboard — protected by Authentik ForwardAuth
+      - "traefik.http.routers.memory-viz.entrypoints=https"
+      - "traefik.http.routers.memory-viz.rule=Host(`mcp.${MEMORY_DOMAIN}`) && PathPrefix(`/viz`)"
+      - "traefik.http.routers.memory-viz.tls.certresolver=letsEncrypt"
+      - "traefik.http.routers.memory-viz.middlewares=authentik-auth"
+      - "traefik.http.routers.memory-viz.service=memory-mcp"
 
 volumes:
   qdrant_storage:
