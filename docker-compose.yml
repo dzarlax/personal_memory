@@ -40,7 +40,7 @@ services:
       - "traefik.http.services.memory-qdrant.loadbalancer.server.port=6333"
 
   memory-mcp:
-    build: .
+    image: ghcr.io/dzarlax/personal-memory:latest
     container_name: memory-mcp
     restart: always
     command: python memory_server.py
@@ -65,7 +65,7 @@ services:
       - "traefik.http.services.memory-mcp.loadbalancer.server.port=8000"
 
   todoist-mcp:
-    build: .
+    image: ghcr.io/dzarlax/personal-memory:latest
     container_name: todoist-mcp
     restart: always
     command: python todoist_server.py
@@ -88,7 +88,7 @@ services:
       - "traefik.http.services.todoist-mcp.loadbalancer.server.port=8001"
 
   memory-viz:
-    build: .
+    image: ghcr.io/dzarlax/personal-memory:latest
     container_name: memory-viz
     restart: always
     command: python viz_server.py
