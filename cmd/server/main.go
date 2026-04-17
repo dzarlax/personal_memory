@@ -80,8 +80,8 @@ func main() {
 		if cfg.EnableRAG {
 			qcChunks := qdrant.NewClient(cfg.QdrantURL, cfg.RAGCollectionChunks)
 			qcFolders := qdrant.NewClient(cfg.QdrantURL, cfg.RAGCollectionFolders)
-			ragSrv := rag.NewServer(qcChunks, qcFolders, ec, cfg)
-			if err := ragSrv.InitCollections(ctx); err != nil {
+			ragSrv := rag.NewServer(ctx, qcChunks, qcFolders, ec, cfg)
+			if err := ragSrv.EnsureCollections(ctx); err != nil {
 				slog.Error("failed to init RAG collections", "error", err)
 				os.Exit(1)
 			}

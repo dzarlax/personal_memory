@@ -28,7 +28,7 @@ func main() {
 	qcFolders := qdrant.NewClient(cfg.QdrantURL, cfg.RAGCollectionFolders)
 	ec := embeddings.NewClient(cfg.EmbedURL)
 
-	if err := rag.InitCollections(ctx, qcChunks, qcFolders, ec); err != nil {
+	if err := rag.EnsureCollections(ctx, qcChunks, qcFolders, ec); err != nil {
 		slog.Error("failed to init RAG collections", "error", err)
 		os.Exit(1)
 	}

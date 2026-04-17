@@ -34,21 +34,49 @@ func NewIndexer(chunks, folders *qdrant.Client, embed *embeddings.Client, docsDi
 	}
 }
 
+// fileState is the snapshot of what Qdrant knows about a given file path:
+// the stored content hash, the expected chunk count, and how many chunks
+// are actually present (used to detect a half-indexed file).
+type fileState struct {
+	hash        string
+	totalChunks int
+	actualCount int
+}
+
 // Run performs an incremental re-index of the documents directory.
 func (idx *Indexer) Run(ctx context.Context) error {
 	slog.Info("RAG indexer started", "dir", idx.docsDir)
+
+	// One scroll at the start — reused for unchanged-file skipping and for
+	// stale-file detection. Avoids an O(N) round-trip storm in indexFile.
+	state, err := idx.snapshotState(ctx)
+	if err != nil {
+		return fmt.Errorf("snapshot qdrant state: %w", err)
+	}
+	slog.Info("qdrant state loaded", "files", len(state))
+
 	dirtyFolders := map[string]bool{}
 	walkedFiles := map[string]bool{}
+	walkHadErrors := false
 
-	err := filepath.WalkDir(idx.docsDir, func(path string, d os.DirEntry, err error) error {
+	err = filepath.WalkDir(idx.docsDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil // skip unreadable entries
+			walkHadErrors = true
+			slog.Warn("walk error", "path", path, "error", err)
+			return nil
 		}
-		if d.IsDir() || !isTextFile(path) {
+		if d.IsDir() {
+			// Skip hidden / system dirs (but never the root itself).
+			if path != idx.docsDir && strings.HasPrefix(d.Name(), ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !isTextFile(path) || strings.HasPrefix(d.Name(), ".") {
 			return nil
 		}
 		walkedFiles[path] = true
-		changed, err := idx.indexFile(ctx, path)
+		changed, err := idx.indexFile(ctx, path, state[path])
 		if err != nil {
 			slog.Warn("failed to index file", "path", path, "error", err)
 			return nil
@@ -62,13 +90,10 @@ func (idx *Indexer) Run(ctx context.Context) error {
 		return fmt.Errorf("walk: %w", err)
 	}
 
-	// Remove chunks for files that no longer exist on disk.
-	deleted, err := idx.removeStaleFiles(ctx, walkedFiles)
-	if err != nil {
-		slog.Warn("stale file cleanup failed", "error", err)
-	} else if deleted > 0 {
-		slog.Info("removed stale file chunks", "files", deleted)
-	}
+	// Stale-file cleanup, guarded. If the walk had errors OR the walked count
+	// is suspiciously low vs. what Qdrant knows, skip — a transient filesystem
+	// issue (Resilio mid-sync, permission race) must not wipe the index.
+	idx.cleanupStale(ctx, state, walkedFiles, dirtyFolders, walkHadErrors)
 
 	for dir := range dirtyFolders {
 		if err := idx.indexFolder(ctx, dir); err != nil {
@@ -80,9 +105,43 @@ func (idx *Indexer) Run(ctx context.Context) error {
 	return nil
 }
 
-// indexFile embeds and upserts chunks for a single file. Returns true if anything changed.
-// Embeds all chunks before touching Qdrant to avoid partial-failure data loss.
-func (idx *Indexer) indexFile(ctx context.Context, path string) (bool, error) {
+// snapshotState scrolls the chunks collection once and returns a map keyed
+// by file_path summarising each file's stored hash and chunk count.
+func (idx *Indexer) snapshotState(ctx context.Context) (map[string]*fileState, error) {
+	all, err := idx.chunks.ScrollAll(ctx, nil, false)
+	if err != nil {
+		return nil, err
+	}
+	state := map[string]*fileState{}
+	for _, p := range all {
+		fp, _ := p.Payload["file_path"].(string)
+		if fp == "" {
+			continue
+		}
+		s, ok := state[fp]
+		if !ok {
+			s = &fileState{}
+			state[fp] = s
+		}
+		if s.hash == "" {
+			if h, ok := p.Payload["file_hash"].(string); ok {
+				s.hash = h
+			}
+		}
+		if s.totalChunks == 0 {
+			if tc, ok := p.Payload["total_chunks"].(float64); ok {
+				s.totalChunks = int(tc)
+			}
+		}
+		s.actualCount++
+	}
+	return state, nil
+}
+
+// indexFile embeds and upserts chunks for a single file. Returns true if
+// anything in Qdrant changed. Embeds all chunks before touching Qdrant so
+// that an embedding failure leaves the old state intact.
+func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileState) (bool, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
@@ -92,50 +151,57 @@ func (idx *Indexer) indexFile(ctx context.Context, path string) (bool, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	isMarkdown := ext == ".md" || ext == ".markdown"
 
-	existingHash := idx.existingFileHash(ctx, path)
-	if existingHash == hash {
-		return false, nil // unchanged
+	// Truly unchanged: same content AND every expected chunk is present.
+	// A prior half-indexed state (actualCount < totalChunks) falls through
+	// and triggers a fresh rebuild.
+	if existing != nil &&
+		existing.hash == hash &&
+		existing.totalChunks > 0 &&
+		existing.actualCount == existing.totalChunks {
+		return false, nil
 	}
 
 	chunks := chunk(string(content), idx.maxBytes, isMarkdown)
 	total := len(chunks)
-
-	// Embed all chunks before touching Qdrant — if embedding fails,
-	// old chunks remain intact.
-	type embeddedChunk struct {
-		c   chunkResult
-		vec []float32
+	if total == 0 {
+		return false, nil // empty file
 	}
-	embedded := make([]embeddedChunk, 0, total)
+
+	// Batch-embed all chunks for this file in one shot (the embeddings client
+	// splits into TEI-sized sub-batches internally).
+	texts := make([]string, total)
 	for i, c := range chunks {
-		vec, err := idx.embed.Embed(ctx, c.text)
-		if err != nil {
-			return false, fmt.Errorf("embed chunk %d of %s: %w", i, path, err)
-		}
-		embedded = append(embedded, embeddedChunk{c: c, vec: vec})
+		texts[i] = c.text
+	}
+	vecs, err := idx.embed.EmbedBatch(ctx, texts)
+	if err != nil {
+		return false, fmt.Errorf("embed %s: %w", path, err)
+	}
+	if len(vecs) != total {
+		return false, fmt.Errorf("embed returned %d vectors for %d chunks of %s", len(vecs), total, path)
 	}
 
-	// Delete old chunks only after all embeddings succeed.
-	if existingHash != "" {
+	// Delete old chunks only now — after all embeddings succeeded.
+	if existing != nil && existing.actualCount > 0 {
 		if err := idx.deleteFileChunks(ctx, path); err != nil {
 			slog.Warn("failed to delete old chunks", "path", path, "error", err)
 		}
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	for i, ec := range embedded {
+	for i, c := range chunks {
 		id := chunkPointID(path, i)
 		payload := map[string]interface{}{
-			"text":         ec.c.text,
+			"text":         c.text,
 			"file_path":    path,
 			"folder_path":  filepath.Dir(path),
 			"chunk_index":  i,
 			"total_chunks": total,
-			"heading":      ec.c.heading,
+			"heading":      c.heading,
 			"file_hash":    hash,
 			"indexed_at":   now,
 		}
-		if err := idx.chunks.Upsert(ctx, qdrant.Point{ID: id, Vector: ec.vec, Payload: payload}); err != nil {
+		if err := idx.chunks.Upsert(ctx, qdrant.Point{ID: id, Vector: vecs[i], Payload: payload}); err != nil {
 			return false, fmt.Errorf("upsert chunk %d of %s: %w", i, path, err)
 		}
 	}
@@ -163,24 +229,29 @@ func (idx *Indexer) indexFolder(ctx context.Context, dir string) error {
 	return idx.folders.Upsert(ctx, qdrant.Point{ID: id, Vector: vec, Payload: payload})
 }
 
-// removeStaleFiles deletes Qdrant chunks for files that are no longer on disk.
-// Returns the number of stale files removed.
-func (idx *Indexer) removeStaleFiles(ctx context.Context, walkedFiles map[string]bool) (int, error) {
-	all, err := idx.chunks.ScrollAll(ctx, nil, false)
-	if err != nil {
-		return 0, err
+// cleanupStale removes Qdrant chunks for files no longer on disk. Aborts if
+// the walk was incomplete or if deletion would remove more than half the
+// known files — both cases suggest a transient filesystem issue rather than
+// intentional deletions.
+func (idx *Indexer) cleanupStale(
+	ctx context.Context,
+	state map[string]*fileState,
+	walkedFiles map[string]bool,
+	dirtyFolders map[string]bool,
+	walkHadErrors bool,
+) {
+	if walkHadErrors {
+		slog.Warn("skipping stale cleanup: walk had errors")
+		return
 	}
-
-	// Collect unique file paths present in Qdrant.
-	inQdrant := map[string]bool{}
-	for _, p := range all {
-		if fp, ok := p.Payload["file_path"].(string); ok {
-			inQdrant[fp] = true
-		}
+	if len(state) > 0 && len(walkedFiles)*2 < len(state) {
+		slog.Warn("skipping stale cleanup: walked file count suspiciously low",
+			"walked", len(walkedFiles), "in_qdrant", len(state))
+		return
 	}
 
 	removed := 0
-	for fp := range inQdrant {
+	for fp := range state {
 		if walkedFiles[fp] {
 			continue
 		}
@@ -189,25 +260,11 @@ func (idx *Indexer) removeStaleFiles(ctx context.Context, walkedFiles map[string
 			continue
 		}
 		removed++
+		dirtyFolders[filepath.Dir(fp)] = true
 	}
-	return removed, nil
-}
-
-// existingFileHash returns the stored file_hash for a file, or "" if not found.
-func (idx *Indexer) existingFileHash(ctx context.Context, path string) string {
-	filter := map[string]interface{}{
-		"must": []map[string]interface{}{
-			{"key": "file_path", "match": map[string]interface{}{"value": path}},
-		},
+	if removed > 0 {
+		slog.Info("removed stale file chunks", "files", removed)
 	}
-	result, err := idx.chunks.Scroll(ctx, 1, nil, filter, false)
-	if err != nil || len(result.Points) == 0 {
-		return ""
-	}
-	if h, ok := result.Points[0].Payload["file_hash"].(string); ok {
-		return h
-	}
-	return ""
 }
 
 // deleteFileChunks removes all chunk points for a file.

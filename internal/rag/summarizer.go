@@ -70,17 +70,24 @@ func firstHeadingAndSnippet(path string) (heading, snippet string) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+	// Raise the token limit so a single very long line doesn't silently fail.
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		if strings.HasPrefix(line, "#") {
+		if isMarkdownHeading(line) {
 			if heading == "" {
 				if i := strings.Index(line, " "); i >= 0 {
 					heading = strings.TrimSpace(line[i+1:])
 				}
 			}
+			continue
+		}
+		// Skip other '#'-starting lines (shebangs, tags, code) without treating
+		// them as headings OR as snippet candidates.
+		if strings.HasPrefix(line, "#") {
 			continue
 		}
 		if snippet == "" {
@@ -94,4 +101,12 @@ func firstHeadingAndSnippet(path string) (heading, snippet string) {
 		}
 	}
 	return heading, snippet
+}
+
+// isMarkdownHeading reports whether a line is an H1/H2/H3 markdown heading
+// ("# ", "## ", or "### "). Kept consistent with splitByHeadings in chunker.go.
+func isMarkdownHeading(line string) bool {
+	return strings.HasPrefix(line, "# ") ||
+		strings.HasPrefix(line, "## ") ||
+		strings.HasPrefix(line, "### ")
 }

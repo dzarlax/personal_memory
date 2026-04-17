@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"path/filepath"
+	"sync"
 
 	"github.com/Dzarlax-AI/personal-memory/internal/config"
 	"github.com/Dzarlax-AI/personal-memory/internal/embeddings"
@@ -15,14 +17,18 @@ import (
 
 // Server exposes RAG as MCP tools registered on the shared memory MCP server.
 type Server struct {
-	chunks  *qdrant.Client
-	folders *qdrant.Client
-	embed   *embeddings.Client
-	cfg     *config.Config
-	indexer *Indexer
+	chunks    *qdrant.Client
+	folders   *qdrant.Client
+	embed     *embeddings.Client
+	cfg       *config.Config
+	indexer   *Indexer
+	lifeCtx   context.Context // cancelled on graceful shutdown
+	reindexMu sync.Mutex      // held while a background reindex is running
 }
 
-func NewServer(chunks, folders *qdrant.Client, embed *embeddings.Client, cfg *config.Config) *Server {
+// NewServer builds the RAG MCP server. lifeCtx should be the long-lived
+// server context so background reindex goroutines can be cancelled on shutdown.
+func NewServer(lifeCtx context.Context, chunks, folders *qdrant.Client, embed *embeddings.Client, cfg *config.Config) *Server {
 	idx := NewIndexer(chunks, folders, embed, cfg.RAGDocumentsDir, cfg.RAGChunkMaxBytes)
 	return &Server{
 		chunks:  chunks,
@@ -30,16 +36,13 @@ func NewServer(chunks, folders *qdrant.Client, embed *embeddings.Client, cfg *co
 		embed:   embed,
 		cfg:     cfg,
 		indexer: idx,
+		lifeCtx: lifeCtx,
 	}
 }
 
-// InitCollections ensures both Qdrant collections exist and have payload field indexes.
-func (s *Server) InitCollections(ctx context.Context) error {
-	return InitCollections(ctx, s.chunks, s.folders, s.embed)
-}
-
-// InitCollections is a package-level helper used by both Server and the standalone indexer binary.
-func InitCollections(ctx context.Context, chunks, folders *qdrant.Client, embed *embeddings.Client) error {
+// EnsureCollections creates both Qdrant collections and their payload indexes.
+// Safe to call on every boot — EnsureCollection/CreateFieldIndex are idempotent in Qdrant.
+func EnsureCollections(ctx context.Context, chunks, folders *qdrant.Client, embed *embeddings.Client) error {
 	vec, err := embed.Embed(ctx, "init")
 	if err != nil {
 		return fmt.Errorf("embed init: %w", err)
@@ -53,7 +56,7 @@ func InitCollections(ctx context.Context, chunks, folders *qdrant.Client, embed 
 		return fmt.Errorf("ensure folders collection: %w", err)
 	}
 
-	// Payload indexes for fast filtering by file_path / folder_path.
+	// Payload indexes for fast filtering.
 	for _, field := range []string{"file_path", "folder_path"} {
 		if err := chunks.CreateFieldIndex(ctx, field, "keyword"); err != nil {
 			return fmt.Errorf("create chunk index %s: %w", field, err)
@@ -66,6 +69,11 @@ func InitCollections(ctx context.Context, chunks, folders *qdrant.Client, embed 
 	return nil
 }
 
+// EnsureCollections is the method form, delegating to the package helper.
+func (s *Server) EnsureCollections(ctx context.Context) error {
+	return EnsureCollections(ctx, s.chunks, s.folders, s.embed)
+}
+
 func (s *Server) RegisterTools(mcpSrv *server.MCPServer) {
 	mcpSrv.AddTool(mcp.NewTool("search_documents",
 		mcp.WithDescription("Search personal documents using semantic similarity. Uses hierarchical search: finds relevant folders first, then searches chunks within those folders. Falls back to flat search if no folder exceeds the threshold."),
@@ -75,7 +83,7 @@ func (s *Server) RegisterTools(mcpSrv *server.MCPServer) {
 	), s.handleSearchDocuments)
 
 	mcpSrv.AddTool(mcp.NewTool("reindex_documents",
-		mcp.WithDescription("Trigger a re-index of the personal documents directory in the background. Skips unchanged files (hash check). Returns immediately."),
+		mcp.WithDescription("Trigger a re-index of the personal documents directory in the background. Skips unchanged files (hash check). Returns immediately; only one reindex may run at a time."),
 	), s.handleReindexDocuments)
 }
 
@@ -111,12 +119,14 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 		return mcp.NewToolResultError(fmt.Sprintf("search error: %v", err)), nil
 	}
 
+	docsDir := s.cfg.RAGDocumentsDir
 	results := make([]map[string]interface{}, 0, len(points))
 	for _, p := range points {
+		fp, _ := p.Payload["file_path"].(string)
 		results = append(results, map[string]interface{}{
 			"score":       p.Score,
 			"text":        p.Payload["text"],
-			"file_path":   p.Payload["file_path"],
+			"file_path":   relPath(docsDir, fp),
 			"heading":     p.Payload["heading"],
 			"chunk_index": p.Payload["chunk_index"],
 		})
@@ -124,6 +134,19 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 
 	b, _ := json.MarshalIndent(results, "", "  ")
 	return mcp.NewToolResultText(string(b)), nil
+}
+
+// relPath returns path relative to base; falls back to the absolute path if
+// they're unrelated (e.g. path on a different volume).
+func relPath(base, path string) string {
+	if base == "" || path == "" {
+		return path
+	}
+	r, err := filepath.Rel(base, path)
+	if err != nil {
+		return path
+	}
+	return r
 }
 
 func (s *Server) hierarchicalSearch(ctx context.Context, vec []float32, limit int) ([]qdrant.Point, error) {
@@ -137,7 +160,6 @@ func (s *Server) hierarchicalSearch(ctx context.Context, vec []float32, limit in
 		return s.flatSearch(ctx, vec, limit)
 	}
 
-	// Build a folder filter from matched folder paths.
 	var conds []map[string]interface{}
 	for _, fp := range folderPoints {
 		if p, ok := fp.Payload["folder_path"].(string); ok {
@@ -167,9 +189,13 @@ func (s *Server) flatSearch(ctx context.Context, vec []float32, limit int) ([]qd
 	return s.chunks.Search(ctx, vec, limit, nil, nil)
 }
 
-func (s *Server) handleReindexDocuments(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *Server) handleReindexDocuments(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	if !s.reindexMu.TryLock() {
+		return mcp.NewToolResultError("reindex already in progress"), nil
+	}
 	go func() {
-		if err := s.indexer.Run(context.Background()); err != nil {
+		defer s.reindexMu.Unlock()
+		if err := s.indexer.Run(s.lifeCtx); err != nil {
 			slog.Error("background reindex failed", "error", err)
 		}
 	}()

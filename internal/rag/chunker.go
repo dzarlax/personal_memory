@@ -78,8 +78,7 @@ func splitByHeadings(text string) []section {
 	}
 
 	for _, line := range lines {
-		// Match H1, H2, H3 headings.
-		if strings.HasPrefix(line, "# ") || strings.HasPrefix(line, "## ") || strings.HasPrefix(line, "### ") {
+		if isMarkdownHeading(line) {
 			flush()
 			if i := strings.Index(line, " "); i >= 0 {
 				currentHeading = strings.TrimSpace(line[i+1:])
