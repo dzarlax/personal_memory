@@ -217,6 +217,31 @@ claude mcp add --transport http todoist https://mcp.yourdomain.com/todoist \
   --scope user
 ```
 
+**Claude Desktop / Perplexity Desktop** — Claude Desktop and Perplexity Desktop don't support remote HTTP MCP servers directly. Use [mcp-remote](https://github.com/geelen/mcp-remote) as a local proxy. Add to `claude_desktop_config.json` (Claude: `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "personal-memory": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.yourdomain.com/memory",
+        "--header",
+        "Authorization:Bearer ${MEMORY_API_KEY}"
+      ],
+      "env": {
+        "MEMORY_API_KEY": "<your API_KEY>"
+      }
+    }
+  }
+}
+```
+
+A ready-to-edit example is also available in [`claude_desktop_config.example.json`](./claude_desktop_config.example.json).
+
+**Web-based clients (Perplexity web, etc.)** — use Streamable HTTP transport with `Authorization: Bearer <API_KEY>` header directly (no proxy needed).
+
 ## Building
 
 ```bash
