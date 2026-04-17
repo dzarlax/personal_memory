@@ -57,7 +57,7 @@ graph TD
 
 ### Auth
 
-- **MCP endpoints** (`/memory`, `/todoist`, `/health`) — protected by `X-API-Key` header checked in application code
+- **MCP endpoints** (`/memory`, `/todoist`, `/health`) — protected by application-level auth. Accepted formats: `X-API-Key: <key>` or `Authorization: Bearer <key>`
 - **Viz dashboard** (`/viz`) — protected by Authentik ForwardAuth (OIDC) at Traefik layer, so browsers get a proper OIDC login flow
 
 ### Visualization (`mcp.<domain>/viz`)
@@ -201,8 +201,7 @@ Two separate MCP servers:
 |---|---|---|
 | Type | Streamable HTTP | Streamable HTTP |
 | URL | `https://mcp.yourdomain.com/memory` | `https://mcp.yourdomain.com/todoist` |
-| Header key | `X-API-Key` | `X-API-Key` |
-| Header value | `<your API_KEY>` | `<your API_KEY>` |
+| Auth header | `X-API-Key: <key>` or `Authorization: Bearer <key>` | same |
 
 **Claude Code** — add both with one command each (add `--scope user` to make them available across all projects):
 ```bash
