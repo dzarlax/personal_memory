@@ -12,6 +12,12 @@ func APIKeyAuth(apiKey string) func(http.Handler) http.Handler {
 				return
 			}
 			key := r.Header.Get("X-API-Key")
+			if key == "" {
+				bearer := r.Header.Get("Authorization")
+				if len(bearer) > 7 && bearer[:7] == "Bearer " {
+					key = bearer[7:]
+				}
+			}
 			if key != apiKey {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
