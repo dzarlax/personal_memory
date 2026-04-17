@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://mcp.dzarlax.dev/memory",
+        "https://mcp.yourdomain.com/memory",
         "--header",
         "Authorization:Bearer ${MEMORY_API_KEY}"
       ],
