@@ -207,6 +207,16 @@ func (c *Client) Delete(ctx context.Context, ids []string) error {
 	return c.postDiscard(ctx, url, body)
 }
 
+// CreateFieldIndex creates a payload field index for fast filtering.
+func (c *Client) CreateFieldIndex(ctx context.Context, fieldName, fieldSchema string) error {
+	url := fmt.Sprintf("%s/collections/%s/index", c.url, c.collection)
+	body := map[string]interface{}{
+		"field_name":   fieldName,
+		"field_schema": fieldSchema,
+	}
+	return c.putWithMethod(ctx, http.MethodPut, url, body)
+}
+
 // SetPayload updates payload fields on a point without re-embedding.
 func (c *Client) SetPayload(ctx context.Context, id string, payload map[string]interface{}) error {
 	url := fmt.Sprintf("%s/collections/%s/points/payload", c.url, c.collection)

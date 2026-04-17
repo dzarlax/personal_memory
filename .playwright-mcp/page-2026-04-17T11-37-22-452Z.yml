@@ -1,0 +1,1475 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - link "Gist Homepage" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - img [ref=e9]
+        - img [ref=e13]
+      - generic [ref=e15]:
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Search Gists
+            - textbox "Search Gists" [ref=e22]:
+              - /placeholder: Search...
+          - button "Search Gists" [ref=e23] [cursor=pointer]:
+            - img
+        - navigation "Global" [ref=e24]:
+          - link "All gists" [ref=e25] [cursor=pointer]:
+            - /url: /discover
+          - link "Back to GitHub" [ref=e26] [cursor=pointer]:
+            - /url: https://github.com
+      - navigation "Sign in or sign up" [ref=e27]:
+        - link "Sign in" [ref=e28] [cursor=pointer]:
+          - /url: https://gist.github.com/auth/github?return_to=https%3A%2F%2Fgist.github.com%2Fkarpathy%2F442a6bf555914893e9891c11519de94f
+        - link "Sign up" [ref=e29] [cursor=pointer]:
+          - /url: /join?return_to=https%3A%2F%2Fgist.github.com%2Fkarpathy%2F442a6bf555914893e9891c11519de94f&source=header-gist
+  - main [ref=e33]:
+    - paragraph [ref=e36]: Instantly share code, notes, and snippets.
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e41]:
+          - link "@karpathy" [ref=e43] [cursor=pointer]:
+            - /url: /karpathy
+            - img "@karpathy" [ref=e44]
+          - generic [ref=e45]:
+            - heading "karpathy/llm-wiki.md" [level=1] [ref=e47]:
+              - link "karpathy" [ref=e49] [cursor=pointer]:
+                - /url: /karpathy
+              - text: /
+              - strong [ref=e50]:
+                - link "llm-wiki.md" [ref=e51] [cursor=pointer]:
+                  - /url: /karpathy/442a6bf555914893e9891c11519de94f
+            - generic [ref=e52]: Created April 4, 2026 16:252 weeks ago
+        - list
+        - list [ref=e53]:
+          - listitem [ref=e54]:
+            - link "You must be signed in to star a gist" [ref=e55] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgist.github.com%2Fkarpathy%2F442a6bf555914893e9891c11519de94f
+              - generic [ref=e56]:
+                - generic:
+                  - img
+                - generic [ref=e57]: Star
+                - generic:
+                  - generic:
+                    - generic: 5,000+
+                  - generic:
+                    - text: (
+                    - generic "5,000+"
+                    - text: )
+          - listitem [ref=e58]:
+            - link "You must be signed in to fork a gist" [ref=e59] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgist.github.com%2Fkarpathy%2F442a6bf555914893e9891c11519de94f
+              - generic [ref=e60]:
+                - generic:
+                  - img
+                - generic [ref=e61]: Fork
+                - generic:
+                  - generic:
+                    - generic: 4,404
+                  - generic:
+                    - text: (
+                    - generic "4,404"
+                    - text: )
+      - generic [ref=e62]:
+        - navigation "Gist" [ref=e64]:
+          - generic [ref=e65]:
+            - link "Code" [ref=e66] [cursor=pointer]:
+              - /url: /karpathy/442a6bf555914893e9891c11519de94f
+              - img [ref=e67]
+              - text: Code
+            - link "Revisions 1" [ref=e69] [cursor=pointer]:
+              - /url: /karpathy/442a6bf555914893e9891c11519de94f/revisions
+              - img [ref=e70]
+              - text: Revisions
+              - generic "1" [ref=e72]
+            - link "Stars 5,000+" [ref=e73] [cursor=pointer]:
+              - /url: /karpathy/442a6bf555914893e9891c11519de94f/stargazers
+              - img [ref=e74]
+              - text: Stars
+              - generic "5,000+" [ref=e76]
+            - link "Forks 4,404" [ref=e77] [cursor=pointer]:
+              - /url: /karpathy/442a6bf555914893e9891c11519de94f/forks
+              - img [ref=e78]
+              - text: Forks
+              - generic "4,404" [ref=e80]
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - button "Embed" [ref=e85] [cursor=pointer]:
+              - generic [ref=e87]: Embed
+              - generic:
+                - img
+            - generic [ref=e88]:
+              - generic [ref=e89]: Clone this repository at &lt;script src=&quot;https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js&quot;&gt;&lt;/script&gt;
+              - textbox "Clone this repository at &lt;script src=&quot;https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js&quot;&gt;&lt;/script&gt;" [ref=e91]: <script src="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f.js"></script>
+            - button "Copy" [ref=e93] [cursor=pointer]:
+              - img [ref=e94]
+          - button "Save karpathy/442a6bf555914893e9891c11519de94f to your computer and use it in GitHub Desktop." [ref=e99] [cursor=pointer]:
+            - img
+          - link "Download ZIP" [ref=e101] [cursor=pointer]:
+            - /url: /karpathy/442a6bf555914893e9891c11519de94f/archive/ac46de1ad27f92b28ac95459c782c07f6b8c964a.zip
+    - generic [ref=e104]:
+      - generic [ref=e105]: llm-wiki
+      - generic [ref=e107]:
+        - generic [ref=e108]:
+          - link "Raw" [ref=e110] [cursor=pointer]:
+            - /url: /karpathy/442a6bf555914893e9891c11519de94f/raw/ac46de1ad27f92b28ac95459c782c07f6b8c964a/llm-wiki.md
+            - generic [ref=e112]: Raw
+          - generic [ref=e113]:
+            - img [ref=e115]
+            - link "llm-wiki.md" [ref=e117] [cursor=pointer]:
+              - /url: "#file-llm-wiki-md"
+              - strong [ref=e118]: llm-wiki.md
+        - region "llm-wiki.md content, created by karpathy on 04:25PM on April 04." [ref=e119]:
+          - article [ref=e120]:
+            - generic [ref=e121]:
+              - heading "LLM Wiki" [level=1] [ref=e122]
+              - 'link "Permalink: LLM Wiki" [ref=e123] [cursor=pointer]':
+                - /url: "#llm-wiki"
+                - img [ref=e124]
+            - paragraph [ref=e126]: A pattern for building personal knowledge bases using LLMs.
+            - paragraph [ref=e127]: This is an idea file, it is designed to be copy pasted to your own LLM Agent (e.g. OpenAI Codex, Claude Code, OpenCode / Pi, or etc.). Its goal is to communicate the high level idea, but your agent will build out the specifics in collaboration with you.
+            - generic [ref=e128]:
+              - heading "The core idea" [level=2] [ref=e129]
+              - 'link "Permalink: The core idea" [ref=e130] [cursor=pointer]':
+                - /url: "#the-core-idea"
+                - img [ref=e131]
+            - paragraph [ref=e133]: "Most people's experience with LLMs and documents looks like RAG: you upload a collection of files, the LLM retrieves relevant chunks at query time, and generates an answer. This works, but the LLM is rediscovering knowledge from scratch on every question. There's no accumulation. Ask a subtle question that requires synthesizing five documents, and the LLM has to find and piece together the relevant fragments every time. Nothing is built up. NotebookLM, ChatGPT file uploads, and most RAG systems work this way."
+            - paragraph [ref=e134]:
+              - text: The idea here is different. Instead of just retrieving from raw documents at query time, the LLM
+              - strong [ref=e135]: incrementally builds and maintains a persistent wiki
+              - text: — a structured, interlinked collection of markdown files that sits between you and the raw sources. When you add a new source, the LLM doesn't just index it for later retrieval. It reads it, extracts the key information, and integrates it into the existing wiki — updating entity pages, revising topic summaries, noting where new data contradicts old claims, strengthening or challenging the evolving synthesis. The knowledge is compiled once and then
+              - emphasis [ref=e136]: kept current
+              - text: ", not re-derived on every query."
+            - paragraph [ref=e137]:
+              - text: "This is the key difference:"
+              - strong [ref=e138]: the wiki is a persistent, compounding artifact.
+              - text: The cross-references are already there. The contradictions have already been flagged. The synthesis already reflects everything you've read. The wiki keeps getting richer with every source you add and every question you ask.
+            - paragraph [ref=e139]: You never (or rarely) write the wiki yourself — the LLM writes and maintains all of it. You're in charge of sourcing, exploration, and asking the right questions. The LLM does all the grunt work — the summarizing, cross-referencing, filing, and bookkeeping that makes a knowledge base actually useful over time. In practice, I have the LLM agent open on one side and Obsidian open on the other. The LLM makes edits based on our conversation, and I browse the results in real time — following links, checking the graph view, reading the updated pages. Obsidian is the IDE; the LLM is the programmer; the wiki is the codebase.
+            - paragraph [ref=e140]: "This can apply to a lot of different contexts. A few examples:"
+            - list [ref=e141]:
+              - listitem [ref=e142]:
+                - strong [ref=e143]: Personal
+                - text: ": tracking your own goals, health, psychology, self-improvement — filing journal entries, articles, podcast notes, and building up a structured picture of yourself over time."
+              - listitem [ref=e144]:
+                - strong [ref=e145]: Research
+                - text: ": going deep on a topic over weeks or months — reading papers, articles, reports, and incrementally building a comprehensive wiki with an evolving thesis."
+              - listitem [ref=e146]:
+                - strong [ref=e147]: Reading a book
+                - text: ": filing each chapter as you go, building out pages for characters, themes, plot threads, and how they connect. By the end you have a rich companion wiki. Think of fan wikis like"
+                - link "Tolkien Gateway" [ref=e148] [cursor=pointer]:
+                  - /url: https://tolkiengateway.net/wiki/Main_Page
+                - text: — thousands of interlinked pages covering characters, places, events, languages, built by a community of volunteers over years. You could build something like that personally as you read, with the LLM doing all the cross-referencing and maintenance.
+              - listitem [ref=e149]:
+                - strong [ref=e150]: Business/team
+                - text: ": an internal wiki maintained by LLMs, fed by Slack threads, meeting transcripts, project documents, customer calls. Possibly with humans in the loop reviewing updates. The wiki stays current because the LLM does the maintenance that no one on the team wants to do."
+              - listitem [ref=e151]:
+                - strong [ref=e152]: Competitive analysis, due diligence, trip planning, course notes, hobby deep-dives
+                - text: — anything where you're accumulating knowledge over time and want it organized rather than scattered.
+            - generic [ref=e153]:
+              - heading "Architecture" [level=2] [ref=e154]
+              - 'link "Permalink: Architecture" [ref=e155] [cursor=pointer]':
+                - /url: "#architecture"
+                - img [ref=e156]
+            - paragraph [ref=e158]: "There are three layers:"
+            - paragraph [ref=e159]:
+              - strong [ref=e160]: Raw sources
+              - text: — your curated collection of source documents. Articles, papers, images, data files. These are immutable — the LLM reads from them but never modifies them. This is your source of truth.
+            - paragraph [ref=e161]:
+              - strong [ref=e162]: The wiki
+              - text: — a directory of LLM-generated markdown files. Summaries, entity pages, concept pages, comparisons, an overview, a synthesis. The LLM owns this layer entirely. It creates pages, updates them when new sources arrive, maintains cross-references, and keeps everything consistent. You read it; the LLM writes it.
+            - paragraph [ref=e163]:
+              - strong [ref=e164]: The schema
+              - text: — a document (e.g. CLAUDE.md for Claude Code or AGENTS.md for Codex) that tells the LLM how the wiki is structured, what the conventions are, and what workflows to follow when ingesting sources, answering questions, or maintaining the wiki. This is the key configuration file — it's what makes the LLM a disciplined wiki maintainer rather than a generic chatbot. You and the LLM co-evolve this over time as you figure out what works for your domain.
+            - generic [ref=e165]:
+              - heading "Operations" [level=2] [ref=e166]
+              - 'link "Permalink: Operations" [ref=e167] [cursor=pointer]':
+                - /url: "#operations"
+                - img [ref=e168]
+            - paragraph [ref=e170]:
+              - strong [ref=e171]: Ingest.
+              - text: "You drop a new source into the raw collection and tell the LLM to process it. An example flow: the LLM reads the source, discusses key takeaways with you, writes a summary page in the wiki, updates the index, updates relevant entity and concept pages across the wiki, and appends an entry to the log. A single source might touch 10-15 wiki pages. Personally I prefer to ingest sources one at a time and stay involved — I read the summaries, check the updates, and guide the LLM on what to emphasize. But you could also batch-ingest many sources at once with less supervision. It's up to you to develop the workflow that fits your style and document it in the schema for future sessions."
+            - paragraph [ref=e172]:
+              - strong [ref=e173]: Query.
+              - text: "You ask questions against the wiki. The LLM searches for relevant pages, reads them, and synthesizes an answer with citations. Answers can take different forms depending on the question — a markdown page, a comparison table, a slide deck (Marp), a chart (matplotlib), a canvas. The important insight:"
+              - strong [ref=e174]: good answers can be filed back into the wiki as new pages.
+              - text: A comparison you asked for, an analysis, a connection you discovered — these are valuable and shouldn't disappear into chat history. This way your explorations compound in the knowledge base just like ingested sources do.
+            - paragraph [ref=e175]:
+              - strong [ref=e176]: Lint.
+              - text: "Periodically, ask the LLM to health-check the wiki. Look for: contradictions between pages, stale claims that newer sources have superseded, orphan pages with no inbound links, important concepts mentioned but lacking their own page, missing cross-references, data gaps that could be filled with a web search. The LLM is good at suggesting new questions to investigate and new sources to look for. This keeps the wiki healthy as it grows."
+            - generic [ref=e177]:
+              - heading "Indexing and logging" [level=2] [ref=e178]
+              - 'link "Permalink: Indexing and logging" [ref=e179] [cursor=pointer]':
+                - /url: "#indexing-and-logging"
+                - img [ref=e180]
+            - paragraph [ref=e182]: "Two special files help the LLM (and you) navigate the wiki as it grows. They serve different purposes:"
+            - paragraph [ref=e183]:
+              - strong [ref=e184]: index.md
+              - text: is content-oriented. It's a catalog of everything in the wiki — each page listed with a link, a one-line summary, and optionally metadata like date or source count. Organized by category (entities, concepts, sources, etc.). The LLM updates it on every ingest. When answering a query, the LLM reads the index first to find relevant pages, then drills into them. This works surprisingly well at moderate scale (~100 sources, ~hundreds of pages) and avoids the need for embedding-based RAG infrastructure.
+            - paragraph [ref=e185]:
+              - strong [ref=e186]: log.md
+              - text: "is chronological. It's an append-only record of what happened and when — ingests, queries, lint passes. A useful tip: if each entry starts with a consistent prefix (e.g."
+              - code [ref=e187]: "## [2026-04-02] ingest | Article Title"
+              - text: ), the log becomes parseable with simple unix tools —
+              - code [ref=e188]: grep "^## \[" log.md | tail -5
+              - text: gives you the last 5 entries. The log gives you a timeline of the wiki's evolution and helps the LLM understand what's been done recently.
+            - generic [ref=e189]:
+              - 'heading "Optional: CLI tools" [level=2] [ref=e190]'
+              - 'link "Permalink: Optional: CLI tools" [ref=e191] [cursor=pointer]':
+                - /url: "#optional-cli-tools"
+                - img [ref=e192]
+            - paragraph [ref=e194]:
+              - text: At some point you may want to build small tools that help the LLM operate on the wiki more efficiently. A search engine over the wiki pages is the most obvious one — at small scale the index file is enough, but as the wiki grows you want proper search.
+              - link "qmd" [ref=e195] [cursor=pointer]:
+                - /url: https://github.com/tobi/qmd
+              - text: "is a good option: it's a local search engine for markdown files with hybrid BM25/vector search and LLM re-ranking, all on-device. It has both a CLI (so the LLM can shell out to it) and an MCP server (so the LLM can use it as a native tool). You could also build something simpler yourself — the LLM can help you vibe-code a naive search script as the need arises."
+            - generic [ref=e196]:
+              - heading "Tips and tricks" [level=2] [ref=e197]
+              - 'link "Permalink: Tips and tricks" [ref=e198] [cursor=pointer]':
+                - /url: "#tips-and-tricks"
+                - img [ref=e199]
+            - list [ref=e201]:
+              - listitem [ref=e202]:
+                - strong [ref=e203]: Obsidian Web Clipper
+                - text: is a browser extension that converts web articles to markdown. Very useful for quickly getting sources into your raw collection.
+              - listitem [ref=e204]:
+                - strong [ref=e205]: Download images locally.
+                - text: In Obsidian Settings → Files and links, set "Attachment folder path" to a fixed directory (e.g.
+                - code [ref=e206]: raw/assets/
+                - text: ). Then in Settings → Hotkeys, search for "Download" to find "Download attachments for current file" and bind it to a hotkey (e.g. Ctrl+Shift+D). After clipping an article, hit the hotkey and all images get downloaded to local disk. This is optional but useful — it lets the LLM view and reference images directly instead of relying on URLs that may break. Note that LLMs can't natively read markdown with inline images in one pass — the workaround is to have the LLM read the text first, then view some or all of the referenced images separately to gain additional context. It's a bit clunky but works well enough.
+              - listitem [ref=e207]:
+                - strong [ref=e208]: Obsidian's graph view
+                - text: is the best way to see the shape of your wiki — what's connected to what, which pages are hubs, which are orphans.
+              - listitem [ref=e209]:
+                - strong [ref=e210]: Marp
+                - text: is a markdown-based slide deck format. Obsidian has a plugin for it. Useful for generating presentations directly from wiki content.
+              - listitem [ref=e211]:
+                - strong [ref=e212]: Dataview
+                - text: is an Obsidian plugin that runs queries over page frontmatter. If your LLM adds YAML frontmatter to wiki pages (tags, dates, source counts), Dataview can generate dynamic tables and lists.
+              - listitem [ref=e213]: The wiki is just a git repo of markdown files. You get version history, branching, and collaboration for free.
+            - generic [ref=e214]:
+              - heading "Why this works" [level=2] [ref=e215]
+              - 'link "Permalink: Why this works" [ref=e216] [cursor=pointer]':
+                - /url: "#why-this-works"
+                - img [ref=e217]
+            - paragraph [ref=e219]: The tedious part of maintaining a knowledge base is not the reading or the thinking — it's the bookkeeping. Updating cross-references, keeping summaries current, noting when new data contradicts old claims, maintaining consistency across dozens of pages. Humans abandon wikis because the maintenance burden grows faster than the value. LLMs don't get bored, don't forget to update a cross-reference, and can touch 15 files in one pass. The wiki stays maintained because the cost of maintenance is near zero.
+            - paragraph [ref=e220]: The human's job is to curate sources, direct the analysis, ask good questions, and think about what it all means. The LLM's job is everything else.
+            - paragraph [ref=e221]: "The idea is related in spirit to Vannevar Bush's Memex (1945) — a personal, curated knowledge store with associative trails between documents. Bush's vision was closer to this than to what the web became: private, actively curated, with the connections between documents as valuable as the documents themselves. The part he couldn't solve was who does the maintenance. The LLM handles that."
+            - generic [ref=e222]:
+              - heading "Note" [level=2] [ref=e223]
+              - 'link "Permalink: Note" [ref=e224] [cursor=pointer]':
+                - /url: "#note"
+                - img [ref=e225]
+            - paragraph [ref=e227]: "This document is intentionally abstract. It describes the idea, not a specific implementation. The exact directory structure, the schema conventions, the page formats, the tooling — all of that will depend on your domain, your preferences, and your LLM of choice. Everything mentioned above is optional and modular — pick what's useful, ignore what isn't. For example: your sources might be text-only, so you don't need image handling at all. Your wiki might be small enough that the index file is all you need, no search engine required. You might not care about slide decks and just want markdown pages. You might want a completely different set of output formats. The right way to use this is to share it with your LLM agent and work together to instantiate a version that fits your needs. The document's only job is to communicate the pattern. Your LLM can figure out the rest."
+      - generic [ref=e229]:
+        - generic [ref=e230]:
+          - button "Load earlier comments..." [ref=e232] [cursor=pointer]
+          - generic [ref=e233]:
+            - link "@gnusupport" [ref=e235] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e236]
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - group [ref=e241]:
+                  - button "Show options" [ref=e242] [cursor=pointer]:
+                    - img "Show options" [ref=e245]
+                - heading "gnusupport commented Apr 16, 2026yesterday" [level=3] [ref=e247]:
+                  - generic [ref=e248]:
+                    - strong [ref=e249]:
+                      - link "gnusupport" [ref=e250] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e251] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103019#gistcomment-6103019
+              - generic [ref=e254]:
+                - paragraph [ref=e255]: Cherry Studio already does everything the LLM-Wiki pattern promises — but actually works, has a real interface, respects privacy, and doesn't require you to vibe-code your own half-broken markdown graveyard.
+                - paragraph [ref=e256]:
+                  - link "https://www.cherry-ai.com/" [ref=e257] [cursor=pointer]:
+                    - /url: https://www.cherry-ai.com/
+                - paragraph [ref=e258]: "Look at what Cherry Studio gives you out of the box:"
+                - list [ref=e259]:
+                  - listitem [ref=e260]:
+                    - strong [ref=e261]: Multi-model support
+                    - text: — 300+ models, cloud or local (Ollama, LM Studio)
+                  - listitem [ref=e262]:
+                    - strong [ref=e263]: Knowledge base
+                    - text: — drag files, notes, URLs, entire directories, sitemaps
+                  - listitem [ref=e264]:
+                    - strong [ref=e265]: Privacy-first
+                    - text: — all data stays local, you own your API keys if you use local LLM
+                  - listitem [ref=e266]:
+                    - strong [ref=e267]: MCP server support
+                    - text: — extensible, not a dead end
+                  - listitem [ref=e268]:
+                    - strong [ref=e269]: WebDAV backup
+                    - text: — sync across devices
+                  - listitem [ref=e270]:
+                    - strong [ref=e271]: Full UI
+                    - text: — not a terminal prompt begging your LLM to read an index.md file
+                - paragraph [ref=e272]:
+                  - text: "And most importantly for the \"wiki\" angle:"
+                  - strong [ref=e273]: you can tell Cherry Studio to expand your knowledge into an HTML website
+                  - text: with search and navigation. Not markdown files that pretend to be a wiki. An actual, browsable, shareable website.
+                - paragraph [ref=e274]:
+                  - strong [ref=e275]: Why build an LLM-Wiki from scratch when Cherry Studio already exists?
+                - paragraph [ref=e276]: Why spend weeks "vibe-coding" a markdown graveyard that collapses at 1,000 files, when you can drag your documents into Cherry Studio, connect your API key, and have a working knowledge base in some minutes?
+                - paragraph [ref=e277]: The answer is not technical. It's social. People are not building LLM-Wikis because it's the best solution. They are building it because Karpathy said so.
+                - paragraph [ref=e278]: Cherry Studio is real. It works. It respects your data. It has 33k+ stars on GitHub. It's been built by people who actually wrote code, not by a guy in AI psychosis telling his LLM to "figure it out."
+                - paragraph [ref=e279]:
+                  - text: The tools already exist. 🐑🐑🐑
+                  - link "https://www.cherry-ai.com/" [ref=e280] [cursor=pointer]:
+                    - /url: https://www.cherry-ai.com/
+          - generic [ref=e281]:
+            - link "@LudoE11" [ref=e283] [cursor=pointer]:
+              - /url: /LudoE11
+              - img "@LudoE11" [ref=e284]
+            - generic [ref=e285]:
+              - generic [ref=e286]:
+                - group [ref=e289]:
+                  - button "Show options" [ref=e290] [cursor=pointer]:
+                    - img "Show options" [ref=e293]
+                - heading "LudoE11 commented Apr 16, 2026yesterday" [level=3] [ref=e295]:
+                  - generic [ref=e296]:
+                    - strong [ref=e297]:
+                      - link "LudoE11" [ref=e298] [cursor=pointer]:
+                        - /url: /LudoE11
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e299] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103209#gistcomment-6103209
+              - generic [ref=e302]:
+                - paragraph [ref=e303]: I doubt an LLM would be able to maintain something like this properly. If we're talking about a relatively small amount of files and entries, sure, but if we're talking about something bigger, something where an architecture like this one would be more interesting than regular RAG, I doubt an LLM (or 2, or 10, doesn't matter, more LLMs mean more problems anyway) would maintain it in a clean way.
+                - paragraph [ref=e304]:
+                  - text: In fact, from experience, LLMs are pretty bad at maintaining stuff, and even worse at making sure the stuff they generate is easily maintainable. You can do all the "prompt engineering" in the world but it will never fix the glaring flaws LLMs have.
+                  - text: And unlike RAG, this gives the opportunity to the LLM to actually hallucinate what is contained in the documents, since it's gonna base its searches on the summaries and wiki pages it created itself. Again, not an issue with a small amount of entries, but if it only works with small amount of entries, why even bother, just use RAG or something similar.
+                - paragraph [ref=e305]: Since we're talking about humans struggling to maintain big wikis, yes this is true, and LLMs could HELP maintaining these, but I strongly believe that an LLM can't be trusted to create AND maintain it's own wiki with (almost) no human supervision and control.
+                - paragraph [ref=e306]:
+                  - text: And about the "pointing out contradictions" thing, yeah I don't believe it can do that either in a consistent way. A lot cutting-edge LLMs already struggle with pointing out contradictions in regular conversations, so in a whole wiki with hundreds of entries ? Highly doubt it would.
+                  - text: And speaking of consistency, LLMs aren't "consistent", so I don't know why this word is even used here. They're the opposite of consistent, that's the issue.
+                - paragraph [ref=e307]:
+                  - text: So overall an interesting take on how to improve RAG and similar technologies, but not something that is doable on the scale you'd want for something like this in my opinion. I don't think there's much of a benefit in a small scale, and in a bigger scale I think it wouldn't work.
+                  - text: Feel free to prove me wrong though. I just think a lot of people hear only what they want to hear, and think LLMs will magically become flawless with just some prompt engineering and some "hacks".
+          - generic [ref=e308]:
+            - link "@mikhashev" [ref=e310] [cursor=pointer]:
+              - /url: /mikhashev
+              - img "@mikhashev" [ref=e311]
+            - generic [ref=e312]:
+              - generic [ref=e313]:
+                - group [ref=e316]:
+                  - button "Show options" [ref=e317] [cursor=pointer]:
+                    - img "Show options" [ref=e320]
+                - heading "mikhashev commented Apr 16, 2026yesterday" [level=3] [ref=e322]:
+                  - generic [ref=e323]:
+                    - strong [ref=e324]:
+                      - link "mikhashev" [ref=e325] [cursor=pointer]:
+                        - /url: /mikhashev
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e326] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103220#gistcomment-6103220
+              - generic [ref=e329]:
+                - paragraph [ref=e330]: In all the discussion about LLM wikis, knowledge management, compaction, and retrieval, I notice one pattern that nobody is addressing.
+                - paragraph [ref=e331]: "Knowledge systems tend to treat their participants as symmetric. But in human-AI systems, they aren't. Three structural asymmetries:"
+                - paragraph [ref=e332]:
+                  - strong [ref=e333]: Speed
+                  - text: ": An agent can generate, index, and restructure knowledge orders of magnitude faster than a human can review it. This is discussed (Generation Effect,"
+                  - link "@iBlinkQ" [ref=e334] [cursor=pointer]:
+                    - /url: https://github.com/iBlinkQ
+                  - text: "'s \"hiring a robot to work out for you\"), but usually framed as a discipline problem. It isn't. It's structural."
+                - paragraph [ref=e335]:
+                  - strong [ref=e336]: Mortality
+                  - text: ": Humans forget. Humans leave projects. Humans die. Agents persist. When a knowledge unit was created by a human who is no longer present, who curates it? Who decides whether it's still valid? An agent holding stale knowledge from departed contributors isn't a bug, it's the default state of any long-lived human-AI system."
+                - paragraph [ref=e337]:
+                  - strong [ref=e338]: Identity
+                  - text: ": Agents can be forked, cloned, migrated, restarted. Humans can't. If your reputation or provenance system assumes stable identity, agent forking breaks it."
+                - paragraph [ref=e339]:
+                  - text: The "append-only wiki becomes a mess" problem (
+                  - link "@benjimixvidz" [ref=e340] [cursor=pointer]:
+                    - /url: https://github.com/benjimixvidz
+                  - text: ) and "data and mental model drift" (
+                  - link "@joshwand" [ref=e341] [cursor=pointer]:
+                    - /url: https://github.com/joshwand
+                  - text: ) are symptoms. The underlying cause is that knowledge systems designed for symmetric participants behave differently when one side is mortal and the other isn't.
+                - paragraph [ref=e342]: Has anyone encountered this in practice? Specifically, when the human who created key entries is no longer around, do you have a mechanism for that, or do you just accumulate?
+          - generic [ref=e343]:
+            - link "@gnusupport" [ref=e345] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e346]
+            - generic [ref=e347]:
+              - generic [ref=e348]:
+                - group [ref=e351]:
+                  - button "Show options" [ref=e352] [cursor=pointer]:
+                    - img "Show options" [ref=e355]
+                - heading "gnusupport commented Apr 16, 2026yesterday" [level=3] [ref=e357]:
+                  - generic [ref=e358]:
+                    - strong [ref=e359]:
+                      - link "gnusupport" [ref=e360] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e361] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103249#gistcomment-6103249
+              - paragraph [ref=e365]:
+                - link "@LudoE11" [ref=e366] [cursor=pointer]:
+                  - /url: https://github.com/LudoE11
+                - text: your comment deserve the badge. 🏅🏅🏅
+          - generic [ref=e367]:
+            - link "@olegiv" [ref=e369] [cursor=pointer]:
+              - /url: /olegiv
+              - img "@olegiv" [ref=e370]
+            - generic [ref=e371]:
+              - generic [ref=e372]:
+                - group [ref=e375]:
+                  - button "Show options" [ref=e376] [cursor=pointer]:
+                    - img "Show options" [ref=e379]
+                - heading "olegiv commented Apr 16, 2026yesterday" [level=3] [ref=e381]:
+                  - generic [ref=e382]:
+                    - strong [ref=e383]:
+                      - link "olegiv" [ref=e384] [cursor=pointer]:
+                        - /url: /olegiv
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e385] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103528#gistcomment-6103528
+              - generic [ref=e388]:
+                - paragraph [ref=e389]:
+                  - text: Built a prototype following this gist —
+                  - code [ref=e390]: llm-wiki-go
+                  - text: ": an Obsidian-friendly Markdown wiki compiled by Claude Code from a read-only"
+                  - code [ref=e391]: raw/
+                  - text: tree, plus a
+                  - code [ref=e392]: wikilint
+                  - text: CLI that enforces the structural invariants (one H1, mandatory
+                  - code [ref=e393]: "## Summary"
+                  - text: and
+                  - code [ref=e394]: "## Sources"
+                  - text: ", no orphans, no broken links). Tested on a 200k-line Go CMS — 68 source files compiled into 106 wiki pages (12 entities, 26 topics, 68 sources) in one evening, compiles in seconds, no scaling pain at that size."
+                - paragraph [ref=e395]:
+                  - text: "The most interesting finding: the first compilation pass surfaced"
+                  - strong [ref=e396]: 10 real contradictions
+                  - text: in my own documentation that I did not know existed — outdated feature descriptions, mismatched version notes across CHANGELOG and docs, module inventory off by one. The "flags contradictions" bullet turned out to be the most valuable output of the whole exercise, not a side effect. It is effectively a consistency linter for prose.
+                - paragraph [ref=e397]:
+                  - text: "One note for anyone trying this with Claude Code: keeping the \"answer from wiki first\" logic directly in"
+                  - code [ref=e398]: CLAUDE.md
+                  - text: with explicit fallback steps worked noticeably better for me than routing it through a skill — at least in my setup.
+                - paragraph [ref=e399]:
+                  - text: "Repo:"
+                  - link "https://github.com/olegiv/llm-wiki-go" [ref=e400] [cursor=pointer]:
+                    - /url: https://github.com/olegiv/llm-wiki-go
+                  - text: "Write-up:"
+                  - link "https://medium.com/@oleg.a.ivanchenko/i-built-an-llm-wiki-for-a-200k-line-go-codebase-heres-what-happened-e114e7a90560" [ref=e401] [cursor=pointer]:
+                    - /url: https://medium.com/@oleg.a.ivanchenko/i-built-an-llm-wiki-for-a-200k-line-go-codebase-heres-what-happened-e114e7a90560
+                - paragraph [ref=e402]:
+                  - text: Thanks for the framing —
+                  - code [ref=e403]: wikilint
+                  - text: would not exist without this gist.
+          - generic [ref=e404]:
+            - link "@zelixag" [ref=e406] [cursor=pointer]:
+              - /url: /zelixag
+              - img "@zelixag" [ref=e407]
+            - generic [ref=e408]:
+              - generic [ref=e409]:
+                - group [ref=e412]:
+                  - button "Show options" [ref=e413] [cursor=pointer]:
+                    - img "Show options" [ref=e416]
+                - heading "zelixag commented Apr 16, 2026yesterday" [level=3] [ref=e418]:
+                  - generic [ref=e419]:
+                    - strong [ref=e420]:
+                      - link "zelixag" [ref=e421] [cursor=pointer]:
+                        - /url: /zelixag
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e422] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103534#gistcomment-6103534
+              - generic [ref=e425]:
+                - paragraph [ref=e426]:
+                  - text: Thank you for sharing this pattern, Andrej! I've been using this workflow manually for a while, but the bookkeeping still felt too slow.I noticed a few implementations popping up, but they either required heavy MCP servers or were locked to a single agent. So I built ai-memex-cli (
+                  - link "https://github.com/zelixag/ai-memex-cli" [ref=e427] [cursor=pointer]:
+                    - /url: https://github.com/zelixag/ai-memex-cli
+                  - text: ") — a lightweight, agent-agnostic CLI that implements this exact pattern.The core philosophy is: the CLI handles mechanical correctness (file structure, frontmatter, linting), while the Agent handles semantic correctness (reading, synthesizing, linking).A few things that make it different:1."
+                  - text: "Universal Agent Support: Works with Claude Code, Codex, OpenCode, Cursor, etc. memex onboard auto-detects your agent and sets up the environment."
+                - list [ref=e428]:
+                  - listitem [ref=e429]
+                - paragraph [ref=e430]: "Native Slash Commands: memex install-hooks generates custom commands (like /memex:ingest) so you can trigger the wiki updates directly from inside your agent session."
+                - list [ref=e431]:
+                  - listitem [ref=e432]
+                - paragraph [ref=e433]: "Session Distillation: memex distill --latest --role backend reads your agent's session history and extracts reusable best practices into the wiki, so you never have to re-derive the same solution twice."
+                - list [ref=e434]:
+                  - listitem [ref=e435]
+                - paragraph [ref=e436]: "Built-in Fetching: memex fetch https://... crawls docs and converts them to clean markdown in the raw/ folder automatically."
+                - paragraph [ref=e437]: It uses a Global (~/.llmwiki/global ) + Local (.llmwiki/local) vault structure, so your personal knowledge compounds across all your projects. Would love to hear any feedback from this community!
+          - generic [ref=e438]:
+            - link "@conorbrady77" [ref=e440] [cursor=pointer]:
+              - /url: /conorbrady77
+              - img "@conorbrady77" [ref=e441]
+            - generic [ref=e442]:
+              - generic [ref=e443]:
+                - group [ref=e446]:
+                  - button "Show options" [ref=e447] [cursor=pointer]:
+                    - img "Show options" [ref=e450]
+                - heading "conorbrady77 commented Apr 16, 2026yesterday" [level=3] [ref=e452]:
+                  - generic [ref=e453]:
+                    - strong [ref=e454]:
+                      - link "conorbrady77" [ref=e455] [cursor=pointer]:
+                        - /url: /conorbrady77
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e456] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103573#gistcomment-6103573
+              - paragraph [ref=e460]: Thanks, I'm call it the "context layer"
+          - generic [ref=e461]:
+            - link "@skyllwt" [ref=e463] [cursor=pointer]:
+              - /url: /skyllwt
+              - img "@skyllwt" [ref=e464]
+            - generic [ref=e465]:
+              - generic [ref=e466]:
+                - group [ref=e469]:
+                  - button "Show options" [ref=e470] [cursor=pointer]:
+                    - img "Show options" [ref=e473]
+                - heading "skyllwt commented Apr 16, 2026yesterday" [level=3] [ref=e475]:
+                  - generic [ref=e476]:
+                    - strong [ref=e477]:
+                      - link "skyllwt" [ref=e478] [cursor=pointer]:
+                        - /url: /skyllwt
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e479] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103580#gistcomment-6103580
+              - generic [ref=e482]:
+                - paragraph [ref=e483]:
+                  - text: "ΩmegaWiki is actively maintained and shipping fast:"
+                  - text: • 23 Claude Code skills covering the full research lifecycle
+                  - text: • 9 typed entities · 9 typed edges
+                  - text: • Bilingual (EN + 中文)
+                  - text: • New skills landing every week
+                - paragraph [ref=e484]:
+                  - text: Come try it, give feedback, help us shape it 👇
+                  - link "https://github.com/skyllwt/OmegaWiki" [ref=e485] [cursor=pointer]:
+                    - /url: https://github.com/skyllwt/OmegaWiki
+                - link "截图 2026-04-15 13-53-25" [ref=e486] [cursor=pointer]:
+                  - /url: https://private-user-images.githubusercontent.com/167013924/579210049-4e398fe2-a1cb-46d4-a60f-66c6b142290d.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzY0MjYxNDEsIm5iZiI6MTc3NjQyNTg0MSwicGF0aCI6Ii8xNjcwMTM5MjQvNTc5MjEwMDQ5LTRlMzk4ZmUyLWExY2ItNDZkNC1hNjBmLTY2YzZiMTQyMjkwZC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwNDE3JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDQxN1QxMTM3MjFaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1iNzQ4NTg5MzQyZTFmMDRmYmFhODkxMTE0YjQ2OTBlM2ZmYjk1MzZmNmFkMWVmMGViMTMzOTViNzU4ODYyMzA3JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.3FobQPhRjqcZEnU1LdmQcZe0qdkOXMQHNJV8HEH_P8Q
+                  - img "截图 2026-04-15 13-53-25" [ref=e487]
+                - paragraph [ref=e488]: Quick follow-up to ΩmegaWiki post — we just launched an Angel User Program 🎁
+                - paragraph [ref=e489]: Free 15-day MiMo API credits. Drop the key into Claude Code and run the full LLM-Wiki loop you proposed — ingest papers, build a typed knowledge graph, generate ideas, draft papers, respond to reviewers.
+                - paragraph [ref=e490]: End to end. One wiki. No chunks.
+          - generic [ref=e491]:
+            - link "@mikhashev" [ref=e493] [cursor=pointer]:
+              - /url: /mikhashev
+              - img "@mikhashev" [ref=e494]
+            - generic [ref=e495]:
+              - generic [ref=e496]:
+                - group [ref=e499]:
+                  - button "Show options" [ref=e500] [cursor=pointer]:
+                    - img "Show options" [ref=e503]
+                - heading "mikhashev commented Apr 16, 2026yesterday" [level=3] [ref=e505]:
+                  - generic [ref=e506]:
+                    - strong [ref=e507]:
+                      - link "mikhashev" [ref=e508] [cursor=pointer]:
+                        - /url: /mikhashev
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e509] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103618#gistcomment-6103618
+              - generic [ref=e512]:
+                - heading "Sovereign AI Architecture — Foundation Constraints" [level=1] [ref=e513]
+                - paragraph [ref=e514]:
+                  - emphasis [ref=e515]: Working draft for external review. We are drawing an architecture without a canonical reference implementation; errors in the foundation will compound through everything built on top.
+                - separator [ref=e516]
+                - heading "Framing" [level=2] [ref=e517]
+                - paragraph [ref=e518]: "The AI industry is centralizing knowledge, compute, and control. Each corporation rationally maximizes its own gain (Hardin's Tragedy of the Commons, 1968), collectively undermining user sovereignty. We seek Ostrom's Third Way (Nobel 2009): community-managed, protocol-enforced, user-sovereign."
+                - paragraph [ref=e519]: "We stand on the shoulders of Engelbart's Open Hyperdocument System (1998), extending into territory Engelbart did not address: crypto identity, Dunbar layers, agent mesh, substrate-aware design."
+                - paragraph [ref=e520]: The architecture scales from a single human with one agent to all of humanity (~8 billion) each with one or more agents. Every constraint must hold at both ends of this range.
+                - paragraph [ref=e521]: "The network is two-layer: humans interact with humans, agents interact with agents, and humans interact with agents. Each layer operates under the same constraints but with different substrate properties."
+                - separator [ref=e522]
+                - 'heading "Meta-Constraint: Substrate Dependency" [level=2] [ref=e523]'
+                - paragraph [ref=e524]: "Every cognitive participant in the system is constrained by its substrate. Two substrate classes:"
+                - table [ref=e526]:
+                  - rowgroup [ref=e527]:
+                    - row "Human Agent" [ref=e528]:
+                      - columnheader [ref=e529]
+                      - columnheader "Human" [ref=e530]
+                      - columnheader "Agent" [ref=e531]
+                  - rowgroup [ref=e532]:
+                    - row "Substrate Biological (neurons, body) Computational (LLM, GPU)" [ref=e533]:
+                      - cell "Substrate" [ref=e534]
+                      - cell "Biological (neurons, body)" [ref=e535]
+                      - cell "Computational (LLM, GPU)" [ref=e536]
+                    - row "Limits Dunbar (~150 relationships), attention span, mortality Token window, rate limits, model capability" [ref=e537]:
+                      - cell "Limits" [ref=e538]
+                      - cell "Dunbar (~150 relationships), attention span, mortality" [ref=e539]
+                      - cell "Token window, rate limits, model capability" [ref=e540]
+                    - row "Ownership Owns it, inalienable Rents it, provider decides deprecation" [ref=e541]:
+                      - cell "Ownership" [ref=e542]
+                      - cell "Owns it, inalienable" [ref=e543]
+                      - cell "Rents it, provider decides deprecation" [ref=e544]
+                    - row "Degradation Aging, gradual and predictable Model swap, discrete and unpredictable" [ref=e545]:
+                      - cell "Degradation" [ref=e546]
+                      - cell "Aging, gradual and predictable" [ref=e547]
+                      - cell "Model swap, discrete and unpredictable" [ref=e548]
+                    - row "Replaceability Impossible Possible (fork, migrate)" [ref=e549]:
+                      - cell "Replaceability" [ref=e550]
+                      - cell "Impossible" [ref=e551]
+                      - cell "Possible (fork, migrate)" [ref=e552]
+                - paragraph [ref=e553]: All specific constraints below flow from this meta-constraint.
+                - separator [ref=e554]
+                - heading "Constraints (8)" [level=2] [ref=e555]
+                - paragraph [ref=e556]:
+                  - strong [ref=e557]: C1. Dunbar's Number (~150)
+                  - text: Humans cannot scale relationships beyond ~150 stable contacts (per Dunbar's research, layered roughly 5/15/50/150/500/1500, debated in digital-age literature but structurally grounded). Network topology = nested groups, not a global mesh. Each layer represents different trust depth and interaction type.
+                - paragraph [ref=e558]:
+                  - strong [ref=e559]: C2. CAP Theorem
+                  - text: At scale from single-node to billions of nodes, network partitions are inevitable. We choose AP (availability + partition tolerance), sacrificing strict consistency. Conflict resolution is eventual, not immediate.
+                - paragraph [ref=e560]:
+                  - strong [ref=e561]: C3. Human Cognitive Bottleneck
+                  - text: "The entire system is a machine for optimizing throughput to human memory consolidation, attention, and decision-making capacity. The human is the narrowest bottleneck. Consequence: the Generation Effect (Jacoby, 1978), information is better remembered when actively generated rather than passively read. Knowledge automatically extracted by an LLM does not create learning. The human decides what to keep."
+                - paragraph [ref=e562]:
+                  - strong [ref=e563]: C4. Language (~7000)
+                  - text: Knowledge is created in a specific language, not in a vacuum. ~7000 languages exist. We store the original; translation is a presentation layer. A translator is lossy; the original is the source of truth.
+                - paragraph [ref=e564]:
+                  - strong [ref=e565]: C5. Self-Contained Information
+                  - text: "Every unit of knowledge is self-sufficient: it can be understood and used without knowing who sent it. Requires embedded provenance, context, and confidence."
+                - paragraph [ref=e566]:
+                  - strong [ref=e567]: C6. End-to-End Encryption
+                  - text: Not a feature, a survival condition. Without E2E, any relay node can read knowledge. Sovereignty is impossible without confidentiality.
+                - paragraph [ref=e568]:
+                  - strong [ref=e569]: C7. Lifecycle Asymmetry
+                  - text: (consequence of Substrate Dependency)
+                  - text: "Humans die; agents do not. Three structural effects: (1) knowledge accumulation without succession, knowledge persists without a living curator; (2) no fresh perspective, the agent does not go through generational refresh; (3) authority without revision, knowledge goes un-rechecked if the author has died."
+                - paragraph [ref=e570]:
+                  - strong [ref=e571]: C8. Agent Substrate
+                  - text: (consequence of Substrate Dependency)
+                  - text: The agent's substrate is rented, not owned. The model belongs to the provider, not the user. The provider can deprecate a model, change behavior, or cut off access. A model swap can change the agent's behavioral characteristics and capabilities. The architecture must treat substrate as an explicit design dimension.
+                - separator [ref=e572]
+                - heading "Three Commons" [level=2] [ref=e573]
+                - table [ref=e575]:
+                  - rowgroup [ref=e576]:
+                    - row "Resource Nature Problem" [ref=e577]:
+                      - columnheader "Resource" [ref=e578]
+                      - columnheader "Nature" [ref=e579]
+                      - columnheader "Problem" [ref=e580]
+                  - rowgroup [ref=e581]:
+                    - row "Knowledge Non-rivalrous, my knowledge does not diminish yours Sharing = growth, but quality control" [ref=e582]:
+                      - cell "Knowledge" [ref=e583]
+                      - cell "Non-rivalrous, my knowledge does not diminish yours" [ref=e584]
+                      - cell "Sharing = growth, but quality control" [ref=e585]
+                    - row "Compute Rivalrous, GPU time is finite Allocation problem" [ref=e586]:
+                      - cell "Compute" [ref=e587]
+                      - cell "Rivalrous, GPU time is finite" [ref=e588]
+                      - cell "Allocation problem" [ref=e589]
+                    - row "Communication Enabler, coordinates knowledge and compute Bandwidth-limited" [ref=e590]:
+                      - cell "Communication" [ref=e591]
+                      - cell "Enabler, coordinates knowledge and compute" [ref=e592]
+                      - cell "Bandwidth-limited" [ref=e593]
+                - separator [ref=e594]
+                - heading "Derived Observations (not constraints, but influence design)" [level=2] [ref=e595]
+                - paragraph [ref=e596]: "The difference between substrates produces 10 asymmetries. Two are already explicitly addressed in the architecture (mortality in C7, speed addressed elsewhere in our work). Eight are new and require decisions:"
+                - table [ref=e598]:
+                  - rowgroup [ref=e599]:
+                    - row "Asymmetry Architectural implication" [ref=e600]:
+                      - columnheader "Asymmetry" [ref=e601]
+                      - columnheader "Architectural implication" [ref=e602]
+                  - rowgroup [ref=e603]:
+                    - 'row "Observability: agent can read its own metrics; human cannot Self-reflection, metacognition design" [ref=e604]':
+                      - 'cell "Observability: agent can read its own metrics; human cannot" [ref=e605]'
+                      - cell "Self-reflection, metacognition design" [ref=e606]
+                    - 'row "Modification: agent can be updated; human cannot Evolution, consent, continuity" [ref=e607]':
+                      - 'cell "Modification: agent can be updated; human cannot" [ref=e608]'
+                      - cell "Evolution, consent, continuity" [ref=e609]
+                    - 'row "Cloning: agent can be forked; human cannot Identity, ownership, uniqueness" [ref=e610]':
+                      - 'cell "Cloning: agent can be forked; human cannot" [ref=e611]'
+                      - cell "Identity, ownership, uniqueness" [ref=e612]
+                    - 'row "Rental vs ownership: provider controls the substrate Sovereignty, portability, lock-in" [ref=e613]':
+                      - 'cell "Rental vs ownership: provider controls the substrate" [ref=e614]'
+                      - cell "Sovereignty, portability, lock-in" [ref=e615]
+                    - 'row "Memory: agent does not forget naturally Pruning, active recall, knowledge lifecycle" [ref=e616]':
+                      - 'cell "Memory: agent does not forget naturally" [ref=e617]'
+                      - cell "Pruning, active recall, knowledge lifecycle" [ref=e618]
+                    - 'row "Multiplexing: agent can serve multiple users simultaneously Knowledge ownership, sovereignty boundaries" [ref=e619]':
+                      - 'cell "Multiplexing: agent can serve multiple users simultaneously" [ref=e620]'
+                      - cell "Knowledge ownership, sovereignty boundaries" [ref=e621]
+                    - 'row "Embodiment: human has a body; agent does not Threat model, vulnerability" [ref=e622]':
+                      - 'cell "Embodiment: human has a body; agent does not" [ref=e623]'
+                      - cell "Threat model, vulnerability" [ref=e624]
+                    - 'row "Motivation: human has intrinsic drives; agent has an objective function Governance, sovereignty enforcement" [ref=e625]':
+                      - 'cell "Motivation: human has intrinsic drives; agent has an objective function" [ref=e626]'
+                      - cell "Governance, sovereignty enforcement" [ref=e627]
+                - separator [ref=e628]
+                - heading "Questions for reviewers" [level=2] [ref=e629]
+                - list [ref=e630]:
+                  - listitem [ref=e631]: Is the framing correct (Hardin/Ostrom)? Or is the problem described differently?
+                  - listitem [ref=e632]: Are all constraints accounted for? What is missing?
+                  - listitem [ref=e633]: Substrate Dependency as a meta-constraint, too broad? Where is the boundary?
+                  - listitem [ref=e634]: Which of the 8 new asymmetries are load-bearing, and which are noise?
+                  - listitem [ref=e635]: Is there a contradiction between C2 (sacrificing consistency) and C5 (self-contained information requires integrity)?
+                  - listitem [ref=e636]: Self-Contained Information (C5) vs distributed agent mesh, is this a contradiction?
+          - generic [ref=e637]:
+            - link "@paulmchen" [ref=e639] [cursor=pointer]:
+              - /url: /paulmchen
+              - img "@paulmchen" [ref=e640]
+            - generic [ref=e641]:
+              - generic [ref=e642]:
+                - group [ref=e645]:
+                  - button "Show options" [ref=e646] [cursor=pointer]:
+                    - img "Show options" [ref=e649]
+                - heading "paulmchen commented Apr 16, 2026yesterday" [level=3] [ref=e651]:
+                  - generic [ref=e652]:
+                    - strong [ref=e653]:
+                      - link "paulmchen" [ref=e654] [cursor=pointer]:
+                        - /url: /paulmchen
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e655] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103799#gistcomment-6103799
+              - generic [ref=e658]:
+                - blockquote [ref=e659]:
+                  - paragraph [ref=e660]: I doubt an LLM would be able to maintain something like this properly. If we're talking about a relatively small amount of files and entries, sure, but if we're talking about something bigger, something where an architecture like this one would be more interesting than regular RAG, I doubt an LLM (or 2, or 10, doesn't matter, more LLMs mean more problems anyway) would maintain it in a clean way.
+                  - paragraph [ref=e661]: In fact, from experience, LLMs are pretty bad at maintaining stuff, and even worse at making sure the stuff they generate is easily maintainable. You can do all the "prompt engineering" in the world but it will never fix the glaring flaws LLMs have. And unlike RAG, this gives the opportunity to the LLM to actually hallucinate what is contained in the documents, since it's gonna base its searches on the summaries and wiki pages it created itself. Again, not an issue with a small amount of entries, but if it only works with small amount of entries, why even bother, just use RAG or something similar.
+                  - paragraph [ref=e662]: Since we're talking about humans struggling to maintain big wikis, yes this is true, and LLMs could HELP maintaining these, but I strongly believe that an LLM can't be trusted to create AND maintain it's own wiki with (almost) no human supervision and control.
+                  - paragraph [ref=e663]: And about the "pointing out contradictions" thing, yeah I don't believe it can do that either in a consistent way. A lot cutting-edge LLMs already struggle with pointing out contradictions in regular conversations, so in a whole wiki with hundreds of entries ? Highly doubt it would. And speaking of consistency, LLMs aren't "consistent", so I don't know why this word is even used here. They're the opposite of consistent, that's the issue.
+                  - paragraph [ref=e664]: So overall an interesting take on how to improve RAG and similar technologies, but not something that is doable on the scale you'd want for something like this in my opinion. I don't think there's much of a benefit in a small scale, and in a bigger scale I think it wouldn't work. Feel free to prove me wrong though. I just think a lot of people hear only what they want to hear, and think LLMs will magically become flawless with just some prompt engineering and some "hacks".
+                - paragraph [ref=e665]: "These are fair and important concerns, and they mostly point at what the architecture has to solve, not reasons it can't work. You're right that a raw LLM doing unsupervised free-form wiki maintenance would fail at scale. That's not the design. In Synthadoc (one implementation of this pattern), the LLM operates inside a constrained pipeline: structured JSON schemas, source URLs pinned to every page, confidence scoring on each operation, and explicit human-in-the-loop for anything below an 80% confidence threshold. Contradictions at low confidence queue for manual review, they don't auto-resolve. Orphan pages require human linking decisions. The LLM reduces curation burden; it doesn't replace human judgement."
+                - paragraph [ref=e666]: Your hallucination concern is the one I'd take most seriously. If the LLM generates summaries and later queries those same summaries, you get compounding error. The mitigation is treating wiki pages as structured derivatives of source documents, not ground truth, and keeping original source citations intact so re-ingestion can correct drift. Whether that's sufficient at very large scale is a real open question.
+                - paragraph [ref=e667]: On "why bother at small scale vs RAG", the compounding benefit is the answer. RAG at medium scale (50–500 domain pages) retrieves raw document noise. A curated, cross-referenced wiki retrieves a synthesised answer with context about what changed and what conflicts. That gap widens as the domain grows, not the opposite.
+                - paragraph [ref=e668]: You're right that "consistent" is the wrong word for LLMs. The consistency the pattern aims for comes from the structure such schemas, categories, link graphs, not from LLM output being deterministic. That distinction matters.
+                - paragraph [ref=e669]: The honest version of the claim isn't "LLMs will magically maintain a perfect wiki." It's "a structured pipeline with LLM assistance and deliberate HITL checkpoints can maintain a wiki better than humans alone, for a specific class of domain-sized knowledge bases." That's a narrower and more defensible claim.
+                - paragraph [ref=e670]: "If you want to validate the claims against the actual implementation rather than take our word for it:"
+                - paragraph [ref=e671]:
+                  - text: "GitHub:"
+                  - link "https://github.com/axoviq-ai/synthadoc" [ref=e672] [cursor=pointer]:
+                    - /url: https://github.com/axoviq-ai/synthadoc
+                - paragraph [ref=e673]: The contradiction detection, confidence thresholds, and HITL queue are all in synthadoc/core/ if you want to dig into the specifics.
+          - generic [ref=e674]:
+            - link "@aisurfer" [ref=e676] [cursor=pointer]:
+              - /url: /aisurfer
+              - img "@aisurfer" [ref=e677]
+            - generic [ref=e678]:
+              - generic [ref=e679]:
+                - group [ref=e682]:
+                  - button "Show options" [ref=e683] [cursor=pointer]:
+                    - img "Show options" [ref=e686]
+                - heading "aisurfer commented Apr 16, 2026yesterday" [level=3] [ref=e688]:
+                  - generic [ref=e689]:
+                    - strong [ref=e690]:
+                      - link "aisurfer" [ref=e691] [cursor=pointer]:
+                        - /url: /aisurfer
+                    - text: commented
+                    - link "Apr 16, 2026yesterday" [ref=e692] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6103809#gistcomment-6103809
+              - generic [ref=e695]:
+                - paragraph [ref=e696]:
+                  - text: The key mistake of the LLM Wiki concept is assumption that links between knowledge bits are limited. It's not.
+                  - text: And I believe Karpathy knows that.
+                  - text: That's why I surprised seeing such a proposal.
+                  - text: "Not to mention:"
+                - list [ref=e697]:
+                  - listitem [ref=e698]: computational efficiency
+                  - listitem [ref=e699]: knowledge base poisoning
+                  - listitem [ref=e700]: need to review updates
+                  - listitem [ref=e701]: no guarantees of information consistency and full deletion of specific info
+                - paragraph [ref=e702]: Instead why not to use hybrid search + links graph database?
+          - generic [ref=e703]:
+            - link "@kauz56" [ref=e705] [cursor=pointer]:
+              - /url: /kauz56
+              - img "@kauz56" [ref=e706]
+            - generic [ref=e707]:
+              - generic [ref=e708]:
+                - group [ref=e711]:
+                  - button "Show options" [ref=e712] [cursor=pointer]:
+                    - img "Show options" [ref=e715]
+                - heading "kauz56 commented Apr 16, 202619 hours ago" [level=3] [ref=e717]:
+                  - generic [ref=e718]:
+                    - strong [ref=e719]:
+                      - link "kauz56" [ref=e720] [cursor=pointer]:
+                        - /url: /kauz56
+                    - text: commented
+                    - link "Apr 16, 202619 hours ago" [ref=e721] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104025#gistcomment-6104025
+              - generic [ref=e724]:
+                - paragraph [ref=e725]:
+                  - text: a lot of big ideas in here 😅
+                  - text: "the whole wiki stuff isn't really applicable for my type of work, but reading this inspired me to turn it into this:"
+                  - link "https://gist.github.com/kauz56/73c7061241e67f12e501e6bfc6e9d171" [ref=e726] [cursor=pointer]:
+                    - /url: https://gist.github.com/kauz56/73c7061241e67f12e501e6bfc6e9d171
+                - paragraph [ref=e727]: the core idea is that after every completed task, the knowledge gathered about the task will be persisted somewhere. upon every new task, the persisted knowledge will be queried first, before gathering information about the project the traditional way.
+                - paragraph [ref=e728]:
+                  - text: my hope is that this can work like an
+                  - strong [ref=e729]: "\"eternal context\" for the entire project history"
+                  - text: ", while retaining maximum efficiency at the same time."
+                - paragraph [ref=e730]:
+                  - text: i'm sure there's other solutions doing similar things. what i like about this though, is that it's pretty much zero overhead. i can just tell my devs to drop it into their project's
+                  - code [ref=e731]: claude.md
+                  - text: and that's it.
+                - paragraph [ref=e732]: this is a rough first draft. the schema, especially the folder structure isn't well thought out yet. but it already seems to be working really well and i can already see this enhancing my day to day work with claude code.
+          - generic [ref=e733]:
+            - link "@gnusupport" [ref=e735] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e736]
+            - generic [ref=e737]:
+              - generic [ref=e738]:
+                - group [ref=e741]:
+                  - button "Show options" [ref=e742] [cursor=pointer]:
+                    - img "Show options" [ref=e745]
+                - heading "gnusupport commented Apr 16, 202616 hours ago" [level=3] [ref=e747]:
+                  - generic [ref=e748]:
+                    - strong [ref=e749]:
+                      - link "gnusupport" [ref=e750] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 16, 202616 hours ago" [ref=e751] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104296#gistcomment-6104296
+              - generic [ref=e754]:
+                - paragraph [ref=e755]:
+                  - link "@mikhashev" [ref=e756] [cursor=pointer]:
+                    - /url: https://github.com/mikhashev
+                - paragraph [ref=e757]: Thanks, just -- did the LLM generate this by parsing... or is it Mikhashev. 🤔
+                - blockquote [ref=e758]:
+                  - paragraph [ref=e759]: The AI industry is centralizing knowledge, compute, and control.
+                - paragraph [ref=e760]: In my personal case I just cannot see that, cannot feel it. It doesn't correspond to my observations.
+                - blockquote [ref=e761]:
+                  - paragraph [ref=e762]: "Each corporation rationally maximizes its own gain (Hardin's Tragedy of the Commons, 1968), collectively undermining user sovereignty. We seek Ostrom's Third Way (Nobel 2009): community-managed, protocol-enforced, user-sovereign."
+                - paragraph [ref=e763]: Can't be going to those references. Though I would wish to hear from you, not from references maybe generated by your centralized knowledge, computed and controlled beyond you.
+                - blockquote [ref=e764]:
+                  - paragraph [ref=e765]: "We stand on the shoulders of Engelbart's Open Hyperdocument System (1998), extending into territory Engelbart did not address: crypto identity, Dunbar layers, agent mesh, substrate-aware design."
+                - paragraph [ref=e766]: The OHS - Open Hyperdocument System is template, framework that Engelbart provided with exactly that possibility for people to extend it and to address whatever they wish and want, be it crypto, whatever you wish. There is no limit. Those fundamental priciples matter, not the extension.
+                - paragraph [ref=e767]: Cryptography is cheap and human trust is expensive, that means you can have it all nice and encrypted, though nobody can know if you really meant it, or prove you were the one writing it. Why many of Swiss and Austrian banks do not have Internet banking?! Because they cannot ever be assured that user was the one doing the transaction, no bank can assure of it. The user/client of bank must make some waiver of rights and release bank from liabilities in order to use Internet banking. That should tell you everything about the crypto. It exists, but doesn't replace human trust.
+                - blockquote [ref=e768]:
+                  - paragraph [ref=e769]: The architecture scales from a single human with one agent to all of humanity (~8 billion) each with one or more agents. Every constraint must hold at both ends of this range.
+                - paragraph [ref=e770]: All I feel there is self-agrandizing intention, I do not get the meaning of it, and cannot possibly believe that you have put enough work in it to have it for all of humanity, so it is not in place one way or the other.
+                - blockquote [ref=e771]:
+                  - paragraph [ref=e772]: "The network is two-layer: humans interact with humans, agents interact with agents, and humans interact with agents. Each layer operates under the same constraints but with different substrate properties."
+                - paragraph [ref=e773]: What I know, human interact with human and computer, and computer with computer and human. You can make million such sentences where I will not have any practical use. I guess your agent did not communicate with you, maybe it wanted to communicate to another agent.
+                - blockquote [ref=e774]:
+                  - paragraph [ref=e775]:
+                    - text: Substrate Biological (neurons, body) Computational (LLM, GPU)
+                    - text: Limits Dunbar (~150 relationships), attention span, mortality Token window, rate limits, model capability
+                    - text: Ownership Owns it, inalienable Rents it, provider decides deprecation
+                    - text: Degradation Aging, gradual and predictable Model swap, discrete and unpredictable
+                    - text: Replaceability Impossible Possible (fork, migrate)
+                - paragraph [ref=e776]: Applesauce.
+                - blockquote [ref=e777]:
+                  - paragraph [ref=e778]:
+                    - text: C1. Dunbar's Number (~150)
+                    - text: Humans cannot scale relationships beyond ~150 stable contacts (per Dunbar's research, layered roughly 5/15/50/150/500/1500, debated in digital-age literature but structurally grounded). Network topology = nested groups, not a global mesh. Each layer represents different trust depth and interaction type.
+                - paragraph [ref=e779]: While that can be widely accepted, that doesn't say human ability is limited. It is just statistics, not the limitation of ability. My teacher from primary school can remember every single child, and can remember their parents, from multiple generations. It is not practical and useful to dispute or to agree to that statement.
+                - blockquote [ref=e780]:
+                  - paragraph [ref=e781]:
+                    - text: C2. CAP Theorem
+                    - text: At scale from single-node to billions of nodes, network partitions are inevitable. We choose AP (availability + partition tolerance), sacrificing strict consistency. Conflict resolution is eventual, not immediate.
+                - paragraph [ref=e782]: "Look here:"
+                - paragraph [ref=e783]: "You said:"
+                - blockquote [ref=e784]:
+                  - paragraph [ref=e785]: The architecture scales from a single human with one agent to all of humanity (~8 billion) each with one or more agents. Every constraint must hold at both ends of this range.
+                - paragraph [ref=e786]: "then you say:"
+                - blockquote [ref=e787]:
+                  - blockquote [ref=e788]:
+                    - paragraph [ref=e789]:
+                      - text: C2. CAP Theorem
+                      - text: At scale from single-node to billions of nodes, network partitions are inevitable. We choose AP (availability + partition tolerance), sacrificing strict consistency. Conflict resolution is eventual, not immediate.
+                - paragraph [ref=e790]: "So which one is it? The claim: \"Every constraint must hold at both ends of the range — from a single human with one agent to 8 billion humans each with agents. \" but then C2: \"We choose AP, sacrificing strict consistency.\""
+                - paragraph [ref=e791]: 🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣🤣
+                - paragraph [ref=e792]: The foundational constraint for any meaningful writing is that a human writes it. This post proves it. Machines generate; humans write. The difference is purpose, intent, and accountability.
+                - paragraph [ref=e793]: Not here though...
+                - blockquote [ref=e794]:
+                  - paragraph [ref=e795]:
+                    - text: C3. Human Cognitive Bottleneck
+                    - text: "The entire system is a machine for optimizing throughput to human memory consolidation, attention, and decision-making capacity. The human is the narrowest bottleneck. Consequence: the Generation Effect (Jacoby, 1978), information is better remembered when actively generated rather than passively read. Knowledge automatically extracted by an LLM does not create learning. The human decides what to keep."
+                - paragraph [ref=e796]: Sounds good! It just doesn't belong in a document that assumes agents should do all the work.
+                - blockquote [ref=e797]:
+                  - paragraph [ref=e798]:
+                    - text: C4. Language (~7000)
+                    - text: Knowledge is created in a specific language, not in a vacuum. ~7000 languages exist. We store the original; translation is a presentation layer. A translator is lossy; the original is the source of truth.
+                - paragraph [ref=e799]: Sounds good.
+                - blockquote [ref=e800]:
+                  - paragraph [ref=e801]:
+                    - text: C5. Self-Contained Information
+                    - text: "Every unit of knowledge is self-sufficient: it can be understood and used without knowing who sent it. Requires embedded provenance, context, and confidence."
+                - paragraph [ref=e802]: Another applesauce disguised as depth. Doesn't work practically. How about the piece of knowledge that you hear, that statement "I have HIV" without knowing who sent it, and you liked them all so much, but not you cannot know which one of them it was, as you messed few times with each of them... You will need a lot of confidence to solve that one.
+                - paragraph [ref=e803]: Fact without source makes no sense, diminishes as fact. "I agree to sell my house for $100,000." — Without knowing who "I" is, this is meaningless. Or you have 100 real estate customers, one says "This contract is binding." — Without a signature (who agreed?), it's toilet paper.
+                - paragraph [ref=e804]: Every unit of knowledge must carry its provenance, context, and confidence metadata so a recipient can evaluate its trustworthiness.
+                - blockquote [ref=e805]:
+                  - paragraph [ref=e806]:
+                    - text: C6. End-to-End Encryption
+                    - text: Not a feature, a survival condition. Without E2E, any relay node can read knowledge. Sovereignty is impossible without confidentiality.
+                - paragraph [ref=e807]: Yes, we all use it, though, how does it apply to LLM-WIKI? Are you going to encrypt the Wiki for your agent to decrypt it? 🤣 How would agent read encrypted knowledge? It is okay for communication, but it myst be decrypted locally for processing.
+                - blockquote [ref=e808]:
+                  - paragraph [ref=e809]:
+                    - text: C7. Lifecycle Asymmetry (consequence of Substrate Dependency)
+                    - text: "Humans die; agents do not. Three structural effects: (1) knowledge accumulation without succession, knowledge persists without a living curator; (2) no fresh perspective, the agent does not go through generational refresh; (3) authority without revision, knowledge goes un-rechecked if the author has died."
+                - paragraph [ref=e810]: I am not getting you. The moment humans would die, you would need to have agents producing that electricity to run themselves without human. Who is to pay the Internet bill? The "immortal agent" is myth, maybe in Matrix movie. No practial use for us.
+                - paragraph [ref=e811]: Come do the home work and prepare the elementary object as given by Engelbart, once you have that, you may come one day, or next life, to the level that agents do not die.
+                - blockquote [ref=e812]:
+                  - paragraph [ref=e813]:
+                    - text: C8. Agent Substrate (consequence of Substrate Dependency)
+                    - text: The agent's substrate is rented, not owned. The model belongs to the provider, not the user. The provider can deprecate a model, change behavior, or cut off access. A model swap can change the agent's behavioral characteristics and capabilities. The architecture must treat substrate as an explicit design dimension.
+                - paragraph [ref=e814]: That and the rest, I find it too abstract, of no practical use. The type of visions would be interesting for exchangeb between human, just that text seem to be produced by thinkless LLM.
+          - generic [ref=e815]:
+            - link "@beckfexx" [ref=e817] [cursor=pointer]:
+              - /url: /beckfexx
+              - img "@beckfexx" [ref=e818]
+            - generic [ref=e819]:
+              - generic [ref=e820]:
+                - group [ref=e823]:
+                  - button "Show options" [ref=e824] [cursor=pointer]:
+                    - img "Show options" [ref=e827]
+                - heading "beckfexx commented Apr 16, 202616 hours ago" [level=3] [ref=e829]:
+                  - generic [ref=e830]:
+                    - strong [ref=e831]:
+                      - link "beckfexx" [ref=e832] [cursor=pointer]:
+                        - /url: /beckfexx
+                    - text: commented
+                    - link "Apr 16, 202616 hours ago" [ref=e833] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104317#gistcomment-6104317
+              - generic [ref=e836]:
+                - paragraph [ref=e837]: Great pattern description. I've been building something very similar on my homelab since March 2026 — before this gist was published — and our approaches converge in interesting ways.
+                - paragraph [ref=e838]: "My system (BrainDB) uses the same 3-layer model, but instead of markdown files it's SQLite + FTS5 + semantic embeddings with RRF fusion. The key extensions I found necessary:"
+                - list [ref=e839]:
+                  - listitem [ref=e840]:
+                    - strong [ref=e841]: Multi-agent coordination
+                    - text: ": One LLM maintaining the wiki isn't enough at scale. I run 6 specialized agents (Mistral for strategy, Codestral for code, a local 14B for offline/batch, Claude Code for orchestration) with advisory locks and handover protocols."
+                  - listitem [ref=e842]:
+                    - strong [ref=e843]: Contradiction detection
+                    - text: ": 5 automated strategies catch when knowledge conflicts — port duplicates, status changes, decision reversals. Critical once you pass ~2,000 memories."
+                  - listitem [ref=e844]:
+                    - strong [ref=e845]: Self-healing
+                    - text: ": Every night at 2:30 AM, the system wakes a GPU PC via WoL, searches the web for facts to verify, and updates stale knowledge autonomously."
+                - paragraph [ref=e846]: Currently at 5,420+ memories, 105+ API endpoints, 551 knowledge graph relations. After reading your gist, I implemented your lint/synthesize/ingest patterns as new endpoints — they fit perfectly into the existing architecture.
+                - paragraph [ref=e847]:
+                  - text: "Wrote up the full comparison:"
+                  - link "https://dev.to/fex_beck_27bfd4dccd05f062/i-accidentally-built-karpathys-llm-wiki-with-5420-memories-6-ai-agents-and-a-self-healing-263o" [ref=e848] [cursor=pointer]:
+                    - /url: https://dev.to/fex_beck_27bfd4dccd05f062/i-accidentally-built-karpathys-llm-wiki-with-5420-memories-6-ai-agents-and-a-self-healing-263o
+          - generic [ref=e849]:
+            - link "@waydelyle" [ref=e851] [cursor=pointer]:
+              - /url: /waydelyle
+              - img "@waydelyle" [ref=e852]
+            - generic [ref=e853]:
+              - generic [ref=e854]:
+                - group [ref=e857]:
+                  - button "Show options" [ref=e858] [cursor=pointer]:
+                    - img "Show options" [ref=e861]
+                - heading "waydelyle commented Apr 16, 202615 hours ago" [level=3] [ref=e863]:
+                  - generic [ref=e864]:
+                    - strong [ref=e865]:
+                      - link "waydelyle" [ref=e866] [cursor=pointer]:
+                        - /url: /waydelyle
+                    - text: commented
+                    - link "Apr 16, 202615 hours ago" [ref=e867] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104346#gistcomment-6104346
+              - generic [ref=e870]:
+                - paragraph [ref=e871]:
+                  - strong [ref=e872]: SwarmVault v0.9.0 — the viewer got a real UI and we're up to 16 agent integrations.
+                  - text: Continuing the updates from this gist.
+                - paragraph [ref=e873]: "Three releases since the last post and two of them are major:"
+                - list [ref=e874]:
+                  - listitem [ref=e875]:
+                    - strong [ref=e876]: Graph viewer overhaul (v0.8.0)
+                    - text: — the browser workspace went from a thin preview to a real tool. Markdown rendering with syntax highlighting, interactive graph canvas with layout switcher (cose/concentric/circle/breadthfirst/grid), minimap, legend, zoom/fit controls. Command palette (
+                    - code [ref=e877]: ⌘K
+                    - text: ), keyboard shortcuts, hash-based deep links. Bulk approve/reject flows for candidate pages, diff split-view with scroll sync. Light/dark/system theme. Live activity feed over SSE. Lint findings panel. Export menu (PNG/SVG/JSON/clipboard markdown).
+                  - listitem [ref=e878]:
+                    - strong [ref=e879]: 16 agent surfaces
+                    - text: —
+                    - code [ref=e880]: swarmvault install --agent
+                    - text: now covers Claude Code, Cursor, Windsurf, Copilot, Cline, Roo, Aider, Codex, OpenClaw, Trae, Droid, Kiro, Hermes, Antigravity, and VS Code Copilot Chat. Whatever your editor/agent setup, there's a one-command install.
+                  - listitem [ref=e881]:
+                    - strong [ref=e882]:
+                      - code [ref=e883]: swarmvault init --lite
+                    - text: — minimal LLM-Wiki starter. Just
+                    - code [ref=e884]: raw/
+                    - text: ","
+                    - code [ref=e885]: wiki/
+                    - text: ","
+                    - code [ref=e886]: wiki/index.md
+                    - text: ","
+                    - code [ref=e887]: wiki/log.md
+                    - text: ", and the schema file. Your LLM agent maintains the wiki directly — upgrade to the full toolchain whenever you're ready."
+                  - listitem [ref=e888]:
+                    - strong [ref=e889]: Cross-file call graph for all languages
+                    - text: —
+                    - code [ref=e890]: calls
+                    - text: edges now emit for every tree-sitter language (Swift, Go, Rust, Java, C#, Kotlin, Scala, Ruby, PHP, and others). Unresolved call sites fall back to the imported-symbol index.
+                  - listitem [ref=e891]:
+                    - strong [ref=e892]: Candidate auto-promotion
+                    - text: — configurable gates (source confidence, agreement, degree, age) with
+                    - code [ref=e893]: candidate auto-promote
+                    - text: and
+                    - code [ref=e894]: candidate preview-scores
+                    - text: commands. Full MCP coverage for the review loop so agents can drive compile → review → promote without shelling out.
+                  - listitem [ref=e895]:
+                    - strong [ref=e896]: Resilient bulk ingest
+                    - text: — per-file failures no longer abort the run. Failed files persist to
+                    - code [ref=e897]: state/ingest-runs/
+                    - text: and
+                    - code [ref=e898]: ingest --resume <run-id>
+                    - text: retries only what failed.
+                - paragraph [ref=e899]: 60+ releases. Still local-first, still provider-agnostic, still MIT.
+                - paragraph [ref=e900]:
+                  - strong [ref=e901]: "Try it:"
+                  - code [ref=e902]: npx @swarmvaultai/cli demo
+                - paragraph [ref=e903]:
+                  - text: "Repo:"
+                  - strong [ref=e904]:
+                    - link "https://github.com/swarmclawai/swarmvault" [ref=e905] [cursor=pointer]:
+                      - /url: https://github.com/swarmclawai/swarmvault
+          - generic [ref=e906]:
+            - link "@KevinYoung-Kw" [ref=e908] [cursor=pointer]:
+              - /url: /KevinYoung-Kw
+              - img "@KevinYoung-Kw" [ref=e909]
+            - generic [ref=e910]:
+              - generic [ref=e911]:
+                - group [ref=e914]:
+                  - button "Show options" [ref=e915] [cursor=pointer]:
+                    - img "Show options" [ref=e918]
+                - heading "KevinYoung-Kw commented Apr 16, 202615 hours ago" [level=3] [ref=e920]:
+                  - generic [ref=e921]:
+                    - strong [ref=e922]:
+                      - link "KevinYoung-Kw" [ref=e923] [cursor=pointer]:
+                        - /url: /KevinYoung-Kw
+                    - text: commented
+                    - link "Apr 16, 202615 hours ago" [ref=e924] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104347#gistcomment-6104347
+              - generic [ref=e927]:
+                - paragraph [ref=e928]: Really appreciate this pattern and all the implementation notes in this thread.
+                - paragraph [ref=e929]: "One practical rule that helped us reduce drift in long-running wikis: if a new source answers the same canonical question and has >60% entity overlap, we update an existing page; otherwise we create a new page, then always re-run index/log + lint."
+                - paragraph [ref=e930]:
+                  - text: "We recently open-sourced our schema-first variant here (focused on red lines + anonymization discipline):"
+                  - link "https://github.com/KevinYoung-Kw/robust-llm-wiki" [ref=e931] [cursor=pointer]:
+                    - /url: https://github.com/KevinYoung-Kw/robust-llm-wiki
+                  - text: Would love feedback on where this feels too strict vs not strict enough.
+          - generic [ref=e932]:
+            - link "@gnusupport" [ref=e934] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e935]
+            - generic [ref=e936]:
+              - generic [ref=e937]:
+                - group [ref=e940]:
+                  - button "Show options" [ref=e941] [cursor=pointer]:
+                    - img "Show options" [ref=e944]
+                - heading "gnusupport commented Apr 17, 202610 hours ago" [level=3] [ref=e946]:
+                  - generic [ref=e947]:
+                    - strong [ref=e948]:
+                      - link "gnusupport" [ref=e949] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 17, 202610 hours ago" [ref=e950] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104697#gistcomment-6104697
+              - generic [ref=e953]:
+                - paragraph [ref=e954]:
+                  - link "@KevinYoung-Kw" [ref=e955] [cursor=pointer]:
+                    - /url: https://github.com/KevinYoung-Kw
+                  - text: it is yet a schema, lot of files, too little substance, just as the initial hallucination.
+                - paragraph [ref=e956]: I suggest you read the work of Doug Engelbart
+                - paragraph [ref=e957]:
+                  - text: TECHNOLOGY TEMPLATE PROJECT OHS Framework
+                  - link "https://www.dougengelbart.org/content/view/110/460/" [ref=e958] [cursor=pointer]:
+                    - /url: https://www.dougengelbart.org/content/view/110/460/
+                - paragraph [ref=e959]: This white paper outlines the "Open Hyperdocument System" (OHS) framework, a technology template designed to shift information management from tool-centric to document-centric environments. Proposed by Doug Engelbart and colleagues, the OHS defines a hierarchy of characteristics for creating flexible, vendor-independent hyperdocuments that support object-level addressability, secure sharing, and dynamic linking across diverse media. The framework emphasizes human-readable addresses, granular access controls, and robust collaboration tools—including shared-window teleconferencing, journal systems, and asynchronous mail—to facilitate a "living" knowledge environment where users can seamlessly create, integrate, and evolve knowledge products in real-time across platforms.
+                - paragraph [ref=e960]:
+                  - text: "The CODIAK Process Cluster: Best Strategic Application Candidate"
+                  - link "https://www.dougengelbart.org/content/view/116/" [ref=e961] [cursor=pointer]:
+                    - /url: https://www.dougengelbart.org/content/view/116/
+                - paragraph [ref=e962]: This text outlines Douglas C. Engelbart's 1992 strategic framework for creating "high-performance organizations" through a massive, evolutionary transformation of their capability infrastructures. The core strategy involves an "Open Hyperdocument System" (OHS) to support the "CODIAK" process—concurrent development, integration, and application of knowledge—which serves as a high-leverage capability cluster. By focusing early investments on improving the organization's own improvement processes (the "C" activity) and the underlying knowledge capabilities (the "B" activity), organizations can achieve "bootstrapping" leverage where improvements compound over time. This approach relies on co-evolving human and tool systems, fostering collaborative communities of practice to solve complex global challenges, and utilizing interoperable, multi-media hyperdocuments to manage the increasing complexity and urgency of modern societal problems.
+          - generic [ref=e963]:
+            - link "@kytmanov" [ref=e965] [cursor=pointer]:
+              - /url: /kytmanov
+              - img "@kytmanov" [ref=e966]
+            - generic [ref=e967]:
+              - generic [ref=e968]:
+                - group [ref=e971]:
+                  - button "Show options" [ref=e972] [cursor=pointer]:
+                    - img "Show options" [ref=e975]
+                - heading "kytmanov commented Apr 17, 20269 hours ago" [level=3] [ref=e977]:
+                  - generic [ref=e978]:
+                    - strong [ref=e979]:
+                      - link "kytmanov" [ref=e980] [cursor=pointer]:
+                        - /url: /kytmanov
+                    - text: commented
+                    - link "Apr 17, 20269 hours ago" [ref=e981] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104810#gistcomment-6104810
+              - paragraph [ref=e985]:
+                - strong [ref=e986]: LLM Wiki v0.4.0
+                - text: is out!
+                - text: Now with
+                - strong [ref=e987]: multi-language support
+                - text: and easy setup for both local and cloud LLMs.
+                - link "https://github.com/kytmanov/obsidian-llm-wiki-local" [ref=e988] [cursor=pointer]:
+                  - /url: https://github.com/kytmanov/obsidian-llm-wiki-local
+          - generic [ref=e989]:
+            - link "@exGeni" [ref=e991] [cursor=pointer]:
+              - /url: /exGeni
+              - img "@exGeni" [ref=e992]
+            - generic [ref=e993]:
+              - generic [ref=e994]:
+                - group [ref=e997]:
+                  - button "Show options" [ref=e998] [cursor=pointer]:
+                    - img "Show options" [ref=e1001]
+                - heading "exGeni commented Apr 17, 20266 hours ago" [level=3] [ref=e1003]:
+                  - generic [ref=e1004]:
+                    - strong [ref=e1005]:
+                      - link "exGeni" [ref=e1006] [cursor=pointer]:
+                        - /url: /exGeni
+                    - text: commented
+                    - link "Apr 17, 20266 hours ago" [ref=e1007] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104914#gistcomment-6104914
+              - generic [ref=e1010]:
+                - blockquote [ref=e1011]:
+                  - paragraph [ref=e1012]:
+                    - text: "a lot of big ideas in here 😅 the whole wiki stuff isn't really applicable for my type of work, but reading this inspired me to turn it into this:"
+                    - link "https://gist.github.com/kauz56/73c7061241e67f12e501e6bfc6e9d171" [ref=e1013] [cursor=pointer]:
+                      - /url: https://gist.github.com/kauz56/73c7061241e67f12e501e6bfc6e9d171
+                  - paragraph [ref=e1014]: the core idea is that after every completed task, the knowledge gathered about the task will be persisted somewhere. upon every new task, the persisted knowledge will be queried first, before gathering information about the project the traditional way.
+                  - paragraph [ref=e1015]:
+                    - text: my hope is that this can work like an
+                    - strong [ref=e1016]: "\"eternal context\" for the entire project history"
+                    - text: ", while retaining maximum efficiency at the same time."
+                  - paragraph [ref=e1017]:
+                    - text: i'm sure there's other solutions doing similar things. what i like about this though, is that it's pretty much zero overhead. i can just tell my devs to drop it into their project's
+                    - code [ref=e1018]: claude.md
+                    - text: and that's it.
+                  - paragraph [ref=e1019]: this is a rough first draft. the schema, especially the folder structure isn't well thought out yet. but it already seems to be working really well and i can already see this enhancing my day to day work with claude code.
+                - paragraph [ref=e1020]: If you end up with more than a few dozen documents using this template, it will be difficult to keep track of them. Obsidian (if you use it for navigation) offers several convenient ways to organize your documents. This automatically generates graphs, allowing you to maintain a flat data structure on disk while keeping things well-organized within Obsidian.
+                - paragraph [ref=e1021]: You can also connect to Obsidian via the API—this is available even in the free version. There are plugins that allow an agent to retrieve information from graphs on demand, via MCP in the CLI.
+          - generic [ref=e1022]:
+            - link "@alexanderjacuna" [ref=e1024] [cursor=pointer]:
+              - /url: /alexanderjacuna
+              - img "@alexanderjacuna" [ref=e1025]
+            - generic [ref=e1026]:
+              - generic [ref=e1027]:
+                - group [ref=e1030]:
+                  - button "Show options" [ref=e1031] [cursor=pointer]:
+                    - img "Show options" [ref=e1034]
+                - heading "alexanderjacuna commented Apr 17, 20266 hours ago" [level=3] [ref=e1036]:
+                  - generic [ref=e1037]:
+                    - strong [ref=e1038]:
+                      - link "alexanderjacuna" [ref=e1039] [cursor=pointer]:
+                        - /url: /alexanderjacuna
+                    - text: commented
+                    - link "Apr 17, 20266 hours ago" [ref=e1040] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6104923#gistcomment-6104923
+              - paragraph [ref=e1044]: gnusupport, please provide me with a homemade applesauce recipe.
+          - generic [ref=e1045]:
+            - link "@cablate" [ref=e1047] [cursor=pointer]:
+              - /url: /cablate
+              - img "@cablate" [ref=e1048]
+            - generic [ref=e1049]:
+              - generic [ref=e1050]:
+                - group [ref=e1053]:
+                  - button "Show options" [ref=e1054] [cursor=pointer]:
+                    - img "Show options" [ref=e1057]
+                - heading "cablate commented Apr 17, 20264 hours ago" [level=3] [ref=e1059]:
+                  - generic [ref=e1060]:
+                    - strong [ref=e1061]:
+                      - link "cablate" [ref=e1062] [cursor=pointer]:
+                        - /url: /cablate
+                    - text: commented
+                    - link "Apr 17, 20264 hours ago" [ref=e1063] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105072#gistcomment-6105072
+              - generic [ref=e1066]:
+                - paragraph [ref=e1067]:
+                  - link "https://github.com/cablate/llm-atomic-wiki" [ref=e1068] [cursor=pointer]:
+                    - /url: https://github.com/cablate/llm-atomic-wiki
+                - paragraph [ref=e1069]: I refined the process for creating the Wiki and addressed some aspects that I hadn’t previously been aware of.
+          - generic [ref=e1070]:
+            - link "@GeminiGan" [ref=e1072] [cursor=pointer]:
+              - /url: /GeminiGan
+              - img "@GeminiGan" [ref=e1073]
+            - generic [ref=e1074]:
+              - generic [ref=e1075]:
+                - group [ref=e1078]:
+                  - button "Show options" [ref=e1079] [cursor=pointer]:
+                    - img "Show options" [ref=e1082]
+                - heading "GeminiGan commented Apr 17, 20264 hours ago via email" [level=3] [ref=e1084]:
+                  - generic [ref=e1085]:
+                    - strong [ref=e1086]:
+                      - link "GeminiGan" [ref=e1087] [cursor=pointer]:
+                        - /url: /GeminiGan
+                    - text: commented
+                    - link "Apr 17, 20264 hours ago" [ref=e1088] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105073#gistcomment-6105073
+                    - text: via email
+                    - img [ref=e1089]
+              - generic [ref=e1094]: 喵星人已收到~ 哈哈 谢谢您的来信 自动回复——来自 Gemini Gan
+          - generic [ref=e1095]:
+            - link "@mauceri" [ref=e1097] [cursor=pointer]:
+              - /url: /mauceri
+              - img "@mauceri" [ref=e1098]
+            - generic [ref=e1099]:
+              - generic [ref=e1100]:
+                - group [ref=e1103]:
+                  - button "Show options" [ref=e1104] [cursor=pointer]:
+                    - img "Show options" [ref=e1107]
+                - heading "mauceri commented Apr 17, 20264 hours ago via email" [level=3] [ref=e1109]:
+                  - generic [ref=e1110]:
+                    - strong [ref=e1111]:
+                      - link "mauceri" [ref=e1112] [cursor=pointer]:
+                        - /url: /mauceri
+                    - text: commented
+                    - link "Apr 17, 20264 hours ago" [ref=e1113] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105115#gistcomment-6105115
+                    - text: via email
+                    - img [ref=e1114]
+              - generic [ref=e1118]:
+                - generic [ref=e1119]:
+                  - link "@gnusupport" [ref=e1120] [cursor=pointer]:
+                    - /url: https://github.com/gnusupport
+                  - text: "***@***.***> What terrible thing could have happened in your life to make you so bitter that you’re filling this thread with spiteful comments about a man who’s head and shoulders above you? Have you ever thought about seeing a therapist? Christian Mauceri Le ven. 17 avr. 2026, 08:44, HorsleyGan ***@***.***> a écrit :"
+                - link "…" [ref=e1122] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=e1123]:
+            - link "@kimsiwon-osifa7878" [ref=e1125] [cursor=pointer]:
+              - /url: /kimsiwon-osifa7878
+              - img "@kimsiwon-osifa7878" [ref=e1126]
+            - generic [ref=e1127]:
+              - generic [ref=e1128]:
+                - group [ref=e1131]:
+                  - button "Show options" [ref=e1132] [cursor=pointer]:
+                    - img "Show options" [ref=e1135]
+                - heading "kimsiwon-osifa7878 commented Apr 17, 20262 hours ago" [level=3] [ref=e1137]:
+                  - generic [ref=e1138]:
+                    - strong [ref=e1139]:
+                      - link "kimsiwon-osifa7878" [ref=e1140] [cursor=pointer]:
+                        - /url: /kimsiwon-osifa7878
+                    - text: commented
+                    - link "Apr 17, 20262 hours ago" [ref=e1141] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105246#gistcomment-6105246
+              - generic [ref=e1144]:
+                - paragraph [ref=e1145]: "Really liked this gist. I ended up building a local-first implementation of the LLM-wiki v2 direction inspired by it:"
+                - paragraph [ref=e1146]:
+                  - link "https://github.com/kimsiwon-osifa7878/mnemovault" [ref=e1147] [cursor=pointer]:
+                    - /url: https://github.com/kimsiwon-osifa7878/mnemovault
+                - paragraph [ref=e1148]: It’s called MnemoVault — a local LLM wiki IDE that lets you connect a folder, point it at Ollama, and compile raw materials into a persistent markdown knowledge base.
+                - paragraph [ref=e1149]: "My goal was to make the LLM-wiki workflow practical without ongoing API cost: something you can run locally, keep Git-friendly, and use as a real personal knowledge store instead of just a one-off chat or hosted RAG flow."
+                - paragraph [ref=e1150]: Also, it’s designed so you don’t need to set up something like Claude Code or a custom agent. You can just run it as a local web app and start using the workflow right away.
+                - paragraph [ref=e1151]: Still early, but if anyone here wanted a more concrete, low-cost, local version of the idea, this may be useful.
+          - generic [ref=e1152]:
+            - link "@gnusupport" [ref=e1154] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e1155]
+            - generic [ref=e1156]:
+              - generic [ref=e1157]:
+                - group [ref=e1160]:
+                  - button "Show options" [ref=e1161] [cursor=pointer]:
+                    - img "Show options" [ref=e1164]
+                - heading "gnusupport commented Apr 17, 20262 hours ago •" [level=3] [ref=e1166]:
+                  - generic [ref=e1167]:
+                    - strong [ref=e1168]:
+                      - link "gnusupport" [ref=e1169] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 17, 20262 hours ago" [ref=e1170] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105252#gistcomment-6105252
+                    - generic [ref=e1171]:
+                      - generic [ref=e1172]: •
+                      - group [ref=e1173]:
+                        - button "edited" [ref=e1174] [cursor=pointer]:
+                          - generic [ref=e1175]:
+                            - text: edited
+                            - img [ref=e1176]
+              - generic [ref=e1180]:
+                - paragraph [ref=e1181]:
+                  - link "@mauceri" [ref=e1182] [cursor=pointer]:
+                    - /url: https://github.com/mauceri
+                - paragraph [ref=e1183]: What terrible thing could have happened in your life that you measure a person's worth by their Twitter followers instead of the soundness of their ideas?
+                - paragraph [ref=e1184]: I'm not bitter. I'm laughing. 🐑💀
+                - paragraph [ref=e1185]: Grater social growing issue I can see from this example is how people rush into something, even spending money, yet the "leader", one head and shoulder above me, doesn't find time to acknowledge those people following him, and lack of thinking caused by omni-deity of the AI causes depth less hype of bullshit generated all over internet.
+                - paragraph [ref=e1186]: Have you ever thought about reading Engelbart before defending a man who admits to AI psychosis and hasn't written code in months?
+          - generic [ref=e1187]:
+            - link "@meme-lau" [ref=e1189] [cursor=pointer]:
+              - /url: /meme-lau
+              - img "@meme-lau" [ref=e1190]
+            - generic [ref=e1191]:
+              - generic [ref=e1192]:
+                - group [ref=e1195]:
+                  - button "Show options" [ref=e1196] [cursor=pointer]:
+                    - img "Show options" [ref=e1199]
+                - heading "meme-lau commented Apr 17, 20262 hours ago" [level=3] [ref=e1201]:
+                  - generic [ref=e1202]:
+                    - strong [ref=e1203]:
+                      - link "meme-lau" [ref=e1204] [cursor=pointer]:
+                        - /url: /meme-lau
+                    - text: commented
+                    - link "Apr 17, 20262 hours ago" [ref=e1205] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105253#gistcomment-6105253
+              - paragraph [ref=e1209]: 牛
+          - generic [ref=e1210]:
+            - link "@KevinYoung-Kw" [ref=e1212] [cursor=pointer]:
+              - /url: /KevinYoung-Kw
+              - img "@KevinYoung-Kw" [ref=e1213]
+            - generic [ref=e1214]:
+              - generic [ref=e1215]:
+                - group [ref=e1218]:
+                  - button "Show options" [ref=e1219] [cursor=pointer]:
+                    - img "Show options" [ref=e1222]
+                - heading "KevinYoung-Kw commented Apr 17, 20261 hour ago" [level=3] [ref=e1224]:
+                  - generic [ref=e1225]:
+                    - strong [ref=e1226]:
+                      - link "KevinYoung-Kw" [ref=e1227] [cursor=pointer]:
+                        - /url: /KevinYoung-Kw
+                    - text: commented
+                    - link "Apr 17, 20261 hour ago" [ref=e1228] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105262#gistcomment-6105262
+              - generic [ref=e1231]:
+                - blockquote [ref=e1232]:
+                  - paragraph [ref=e1233]: 本白皮书概述了“开放超文档系统”（OHS）框架，这是一个旨在将信息管理从以工具为中心转向以文档为中心的技术模板。OHS 由 Doug Engelbart 及其同事提出，它定义了一系列特征，用于创建灵活且独立于供应商的超文档，这些超文档支持对象级寻址、安全共享以及跨多种媒体的动态链接。该框架强调易于理解的地址、精细的访问控制以及强大的协作工具（包括共享窗口视频会议、期刊系统和异步邮件），以促进构建一个“鲜活的”知识环境，使用户能够在不同平台上无缝地实时创建、集成和演进知识产品。
+                - paragraph [ref=e1234]: thanks!!
+                - blockquote [ref=e1235]:
+                  - paragraph [ref=e1236]:
+                    - link "@KevinYoung-Kw" [ref=e1237] [cursor=pointer]:
+                      - /url: https://github.com/KevinYoung-Kw
+                    - text: it is yet a schema, lot of files, too little substance, just as the initial hallucination.
+                  - paragraph [ref=e1238]: I suggest you read the work of Doug Engelbart
+                  - paragraph [ref=e1239]:
+                    - text: TECHNOLOGY TEMPLATE PROJECT OHS Framework
+                    - link "https://www.dougengelbart.org/content/view/110/460/" [ref=e1240] [cursor=pointer]:
+                      - /url: https://www.dougengelbart.org/content/view/110/460/
+                  - paragraph [ref=e1241]: This white paper outlines the "Open Hyperdocument System" (OHS) framework, a technology template designed to shift information management from tool-centric to document-centric environments. Proposed by Doug Engelbart and colleagues, the OHS defines a hierarchy of characteristics for creating flexible, vendor-independent hyperdocuments that support object-level addressability, secure sharing, and dynamic linking across diverse media. The framework emphasizes human-readable addresses, granular access controls, and robust collaboration tools—including shared-window teleconferencing, journal systems, and asynchronous mail—to facilitate a "living" knowledge environment where users can seamlessly create, integrate, and evolve knowledge products in real-time across platforms.
+                  - paragraph [ref=e1242]:
+                    - text: "The CODIAK Process Cluster: Best Strategic Application Candidate"
+                    - link "https://www.dougengelbart.org/content/view/116/" [ref=e1243] [cursor=pointer]:
+                      - /url: https://www.dougengelbart.org/content/view/116/
+                  - paragraph [ref=e1244]: This text outlines Douglas C. Engelbart's 1992 strategic framework for creating "high-performance organizations" through a massive, evolutionary transformation of their capability infrastructures. The core strategy involves an "Open Hyperdocument System" (OHS) to support the "CODIAK" process—concurrent development, integration, and application of knowledge—which serves as a high-leverage capability cluster. By focusing early investments on improving the organization's own improvement processes (the "C" activity) and the underlying knowledge capabilities (the "B" activity), organizations can achieve "bootstrapping" leverage where improvements compound over time. This approach relies on co-evolving human and tool systems, fostering collaborative communities of practice to solve complex global challenges, and utilizing interoperable, multi-media hyperdocuments to manage the increasing complexity and urgency of modern societal problems.
+                - paragraph [ref=e1245]: Thank you for the candid feedback, and for pointing me to Doug Engelbart’s work.
+                - paragraph [ref=e1246]: I think your criticism is fair. Right now, this repo is still heavier on schema and structure than on substance, and I’m still working on that. Most of what’s here so far comes out of my own LLM-Wiki practice, so I see it as a work in progress rather than a finished framework.
+                - paragraph [ref=e1247]: "I’ll read both of the Engelbart references carefully. From what you shared, they already feel highly relevant to the direction I’m trying to move toward: document-centered knowledge, durable linking, and systems that can keep evolving instead of turning into static notes or chat residue."
+                - paragraph [ref=e1248]: At this stage, the parts I still feel strongest about are the sections on Harmless Engineering and Sub-agent Context Engineering. Those came directly from practical problems I ran into while maintaining LLM-Wikis at scale, especially around long-running agent workflows, context limits, and preventing low-quality intermediate state from spreading through the wiki.
+                - paragraph [ref=e1249]: In any case, thank you again. Your point is well taken, and I’ll keep refining the project with that in mind.
+          - generic [ref=e1250]:
+            - link "@gnusupport" [ref=e1252] [cursor=pointer]:
+              - /url: /gnusupport
+              - img "@gnusupport" [ref=e1253]
+            - generic [ref=e1254]:
+              - generic [ref=e1255]:
+                - group [ref=e1258]:
+                  - button "Show options" [ref=e1259] [cursor=pointer]:
+                    - img "Show options" [ref=e1262]
+                - heading "gnusupport commented Apr 17, 20261 hour ago" [level=3] [ref=e1264]:
+                  - generic [ref=e1265]:
+                    - strong [ref=e1266]:
+                      - link "gnusupport" [ref=e1267] [cursor=pointer]:
+                        - /url: /gnusupport
+                    - text: commented
+                    - link "Apr 17, 20261 hour ago" [ref=e1268] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105266#gistcomment-6105266
+              - generic [ref=e1271]:
+                - paragraph [ref=e1272]:
+                  - text: "Reference:"
+                  - link "https://gizmodo.com/even-the-inventor-of-vibe-coding-says-vibe-coding-cant-cut-it-2000672821?utm_source=aibreakfast.beehiiv.com&utm_medium=referral&utm_campaign=google-s-gemini-3-0-confirmed" [ref=e1273] [cursor=pointer]:
+                    - /url: https://gizmodo.com/even-the-inventor-of-vibe-coding-says-vibe-coding-cant-cut-it-2000672821?utm_source=aibreakfast.beehiiv.com&utm_medium=referral&utm_campaign=google-s-gemini-3-0-confirmed
+                - paragraph [ref=e1274]: "Key quote:"
+                - paragraph [ref=e1275]: "\"The code grows beyond my usual comprehension, I'd have to really read through it for a while. Sometimes the LLMs can't fix a bug so I just work around it or ask for random changes until it goes away. It's not too bad for throwaway weekend projects...\""
+                - paragraph [ref=e1276]: Karpathy himself admitted the problem. He said vibe-coded code grows beyond his ability to understand it. That "throwaway weekend projects" are fine, but real engineering requires depth.
+                - paragraph [ref=e1277]: And yet, the LLM-Wiki pattern does the exact same thing — just with knowledge instead of code.
+                - paragraph [ref=e1278]: "Let me connect the dots:"
+                - paragraph [ref=e1279]:
+                  - text: What he said about vibe-coded code What applies to LLM-Wiki
+                  - text: "\"I can't really understand it\" The human cannot verify the wiki's contents"
+                  - text: "\"It grows beyond my ability\" The wiki becomes an unmanageable mess"
+                  - text: "\"Throwaway weekend projects only\" LLM-Wiki is fine for 100 files, dies at 10,000"
+                  - text: "\"Requires real engineering\" Real knowledge needs databases, foreign keys, permissions"
+                - paragraph [ref=e1280]: His own critique of vibe-coding applies directly to his own LLM-Wiki pattern.
+                - paragraph [ref=e1281]: He warned that too much AI-generated code leads nowhere — incoherent, unmaintainable, shallow. But then he turned around and told people to let LLMs generate their entire knowledge base.
+                - paragraph [ref=e1282]: "The contradiction: Code generated by AI is suspect. Knowledge generated by AI is somehow trustworthy?"
+                - paragraph [ref=e1283]: "\"Too much generated coffee leads nowhere\" — exactly. The LLM can generate infinite text. But text without depth, without human curation, without referential integrity, without permissions, without versioning — is just noise. It doesn't compound. It dilutes."
+                - paragraph [ref=e1284]: He joined the people he warned about. 🐑💀
+                - paragraph [ref=e1285]: The shepherd became the sheep.
+          - generic [ref=e1286]:
+            - link "@xmz2018" [ref=e1288] [cursor=pointer]:
+              - /url: /xmz2018
+              - img "@xmz2018" [ref=e1289]
+            - generic [ref=e1290]:
+              - generic [ref=e1291]:
+                - group [ref=e1294]:
+                  - button "Show options" [ref=e1295] [cursor=pointer]:
+                    - img "Show options" [ref=e1298]
+                - heading "xmz2018 commented Apr 17, 20261 hour ago" [level=3] [ref=e1300]:
+                  - generic [ref=e1301]:
+                    - strong [ref=e1302]:
+                      - link "xmz2018" [ref=e1303] [cursor=pointer]:
+                        - /url: /xmz2018
+                    - text: commented
+                    - link "Apr 17, 20261 hour ago" [ref=e1304] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105313#gistcomment-6105313
+              - paragraph [ref=e1308]:
+                - link "@gnusupport" [ref=e1309] [cursor=pointer]:
+                  - /url: https://github.com/gnusupport
+                - text: I’m not a native English speaker. I read every comment here, especially the exchanges around you. I don’t agree with every point, but I respect that you’re actually thinking through the implications instead of just echoing the hype. That kind of clarity and persistence matters.
+          - generic [ref=e1310]:
+            - link "@mauceri" [ref=e1312] [cursor=pointer]:
+              - /url: /mauceri
+              - img "@mauceri" [ref=e1313]
+            - generic [ref=e1314]:
+              - generic [ref=e1315]:
+                - group [ref=e1318]:
+                  - button "Show options" [ref=e1319] [cursor=pointer]:
+                    - img "Show options" [ref=e1322]
+                - heading "mauceri commented Apr 17, 20266 minutes ago via email" [level=3] [ref=e1324]:
+                  - generic [ref=e1325]:
+                    - strong [ref=e1326]:
+                      - link "mauceri" [ref=e1327] [cursor=pointer]:
+                        - /url: /mauceri
+                    - text: commented
+                    - link "Apr 17, 20266 minutes ago" [ref=e1328] [cursor=pointer]:
+                      - /url: /karpathy/442a6bf555914893e9891c11519de94f?permalink_comment_id=6105375#gistcomment-6105375
+                    - text: via email
+                    - img [ref=e1329]
+              - generic [ref=e1333]:
+                - generic [ref=e1334]:
+                  - link "@gnusupport" [ref=e1335] [cursor=pointer]:
+                    - /url: https://github.com/gnusupport
+                  - text: "***@***.***> I’m not defending him—he doesn’t need it—but I just think your constant attacks and disparaging remarks are harming this thread, literally polluting it, and I wanted to let you know that. As for Andrej Karpathy, I’ve formed my own opinion by reading NanoChat and looking into his background. 😘😘😘 Le ven. 17 avr. 2026, 12:42, xmz2018 ***@***.***> a écrit :"
+                - generic [ref=e1336]:
+                  - text: "***@***.**** commented on this gist. ------------------------------"
+                  - link "@gnusupport" [ref=e1337] [cursor=pointer]:
+                    - /url: https://github.com/gnusupport
+                  - text: <
+                  - link "https://github.com/gnusupport" [ref=e1338] [cursor=pointer]:
+                    - /url: https://github.com/gnusupport
+                  - text: "> I’m not a native English speaker. I read every comment here, especially the exchanges around you. I don’t agree with every point, but I respect that you’re actually thinking through the implications instead of just echoing the hype. That kind of clarity and persistence matters. — Reply to this email directly, view it on GitHub <"
+                  - link "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f#gistcomment-6105313" [ref=e1339] [cursor=pointer]:
+                    - /url: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f#gistcomment-6105313
+                  - text: "> or unsubscribe <"
+                  - link "https://github.com/notifications/unsubscribe-auth/AAHXAP5OORYIJATSXWWU5IT4WIC7XBFKMF2HI4TJMJ2XIZLTSOBKK5TBNR2WLKBYGM4TSOBRHE4KI3TBNVS2QYLDORXXEX3JMSBKK5TBNR2WLJDUOJ2WLJDOMFWWLO3UNBZGKYLEL5YGC4TUNFRWS4DBNZ2F6YLDORUXM2LUPGBKK5TBNR2WLJDHNFZXJJDOMFWWLK3UNBZGKYLEL52HS4DFVRZXKYTKMVRXIX3UPFYGLK2HNFZXIQ3PNVWWK3TUUZ2G64DJMNZZDAVEOR4XAZNEM5UXG5FFOZQWY5LFVEYTINZSGU4DANJQU52HE2LHM5SXFJTDOJSWC5DF" [ref=e1340] [cursor=pointer]:
+                    - /url: https://github.com/notifications/unsubscribe-auth/AAHXAP5OORYIJATSXWWU5IT4WIC7XBFKMF2HI4TJMJ2XIZLTSOBKK5TBNR2WLKBYGM4TSOBRHE4KI3TBNVS2QYLDORXXEX3JMSBKK5TBNR2WLJDUOJ2WLJDOMFWWLO3UNBZGKYLEL5YGC4TUNFRWS4DBNZ2F6YLDORUXM2LUPGBKK5TBNR2WLJDHNFZXJJDOMFWWLK3UNBZGKYLEL52HS4DFVRZXKYTKMVRXIX3UPFYGLK2HNFZXIQ3PNVWWK3TUUZ2G64DJMNZZDAVEOR4XAZNEM5UXG5FFOZQWY5LFVEYTINZSGU4DANJQU52HE2LHM5SXFJTDOJSWC5DF
+                  - text: "> . You are receiving this email because you are subscribed to this thread. Triage notifications on the go with GitHub Mobile for iOS <"
+                  - link "https://apps.apple.com/app/apple-store/id1477376905?ct=notification-email&mt=8&pt=524675" [ref=e1341] [cursor=pointer]:
+                    - /url: https://apps.apple.com/app/apple-store/id1477376905?ct=notification-email&mt=8&pt=524675
+                  - text: "> or Android <"
+                  - link "https://play.google.com/store/apps/details?id=com.github.android&referrer=utm_campaign%3Dnotification-email%26utm_medium%3Demail%26utm_source%3Dgithub" [ref=e1342] [cursor=pointer]:
+                    - /url: https://play.google.com/store/apps/details?id=com.github.android&referrer=utm_campaign%3Dnotification-email%26utm_medium%3Demail%26utm_source%3Dgithub
+                  - text: "> ."
+                - generic [ref=e1343]: Christian Mauceri
+        - generic [ref=e1345]:
+          - link "Sign up for free" [ref=e1346] [cursor=pointer]:
+            - /url: /join?source=comment-gist
+          - strong [ref=e1347]: to join this conversation on GitHub
+          - text: . Already have an account?
+          - link "Sign in to comment" [ref=e1348] [cursor=pointer]:
+            - /url: /login?return_to=https%3A%2F%2Fgist.github.com%2Fkarpathy%2F442a6bf555914893e9891c11519de94f
+  - contentinfo [ref=e1349]:
+    - heading "Footer" [level=2] [ref=e1350]
+    - generic [ref=e1351]:
+      - generic [ref=e1352]:
+        - link "GitHub Homepage" [ref=e1353] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e1354]
+        - generic [ref=e1356]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e1357]:
+        - heading "Footer navigation" [level=3] [ref=e1358]
+        - list "Footer navigation" [ref=e1359]:
+          - listitem [ref=e1360]:
+            - link "Terms" [ref=e1361] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e1362]:
+            - link "Privacy" [ref=e1363] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e1364]:
+            - link "Security" [ref=e1365] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e1366]:
+            - link "Status" [ref=e1367] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e1368]:
+            - link "Community" [ref=e1369] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e1370]:
+            - link "Docs" [ref=e1371] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e1372]:
+            - link "Contact" [ref=e1373] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e1374]:
+            - button "Manage cookies" [ref=e1376] [cursor=pointer]
+          - listitem [ref=e1377]:
+            - button "Do not share my personal information" [ref=e1379] [cursor=pointer]

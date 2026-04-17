@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"log/slog"
 
 	"github.com/Dzarlax-AI/personal-memory/internal/config"
 	"github.com/Dzarlax-AI/personal-memory/internal/embeddings"
@@ -33,19 +33,36 @@ func NewServer(chunks, folders *qdrant.Client, embed *embeddings.Client, cfg *co
 	}
 }
 
+// InitCollections ensures both Qdrant collections exist and have payload field indexes.
 func (s *Server) InitCollections(ctx context.Context) error {
-	// Embed a test string to get the vector size.
-	vec, err := s.embed.Embed(ctx, "init")
+	return InitCollections(ctx, s.chunks, s.folders, s.embed)
+}
+
+// InitCollections is a package-level helper used by both Server and the standalone indexer binary.
+func InitCollections(ctx context.Context, chunks, folders *qdrant.Client, embed *embeddings.Client) error {
+	vec, err := embed.Embed(ctx, "init")
 	if err != nil {
 		return fmt.Errorf("embed init: %w", err)
 	}
 	size := len(vec)
-	if err := s.chunks.EnsureCollection(ctx, size); err != nil {
+
+	if err := chunks.EnsureCollection(ctx, size); err != nil {
 		return fmt.Errorf("ensure chunks collection: %w", err)
 	}
-	if err := s.folders.EnsureCollection(ctx, size); err != nil {
+	if err := folders.EnsureCollection(ctx, size); err != nil {
 		return fmt.Errorf("ensure folders collection: %w", err)
 	}
+
+	// Payload indexes for fast filtering by file_path / folder_path.
+	for _, field := range []string{"file_path", "folder_path"} {
+		if err := chunks.CreateFieldIndex(ctx, field, "keyword"); err != nil {
+			return fmt.Errorf("create chunk index %s: %w", field, err)
+		}
+	}
+	if err := folders.CreateFieldIndex(ctx, "folder_path", "keyword"); err != nil {
+		return fmt.Errorf("create folder index: %w", err)
+	}
+
 	return nil
 }
 
@@ -58,7 +75,7 @@ func (s *Server) RegisterTools(mcpSrv *server.MCPServer) {
 	), s.handleSearchDocuments)
 
 	mcpSrv.AddTool(mcp.NewTool("reindex_documents",
-		mcp.WithDescription("Trigger a re-index of the personal documents directory. Skips unchanged files (hash check). Run this after adding or editing documents."),
+		mcp.WithDescription("Trigger a re-index of the personal documents directory in the background. Skips unchanged files (hash check). Returns immediately."),
 	), s.handleReindexDocuments)
 }
 
@@ -120,38 +137,26 @@ func (s *Server) hierarchicalSearch(ctx context.Context, vec []float32, limit in
 		return s.flatSearch(ctx, vec, limit)
 	}
 
-	// Collect matched folder paths.
-	var folderPaths []interface{}
+	// Build a folder filter from matched folder paths.
+	var conds []map[string]interface{}
 	for _, fp := range folderPoints {
 		if p, ok := fp.Payload["folder_path"].(string); ok {
-			folderPaths = append(folderPaths, p)
+			conds = append(conds, map[string]interface{}{
+				"key":   "folder_path",
+				"match": map[string]interface{}{"value": p},
+			})
 		}
 	}
-
-	if len(folderPaths) == 0 {
+	if len(conds) == 0 {
 		return s.flatSearch(ctx, vec, limit)
 	}
 
-	// Search chunks filtered to those folders.
-	filter := map[string]interface{}{
-		"should": func() []map[string]interface{} {
-			conds := make([]map[string]interface{}, len(folderPaths))
-			for i, fp := range folderPaths {
-				conds[i] = map[string]interface{}{
-					"key": "folder_path",
-					"match": map[string]interface{}{"value": fp},
-				}
-			}
-			return conds
-		}(),
-	}
-
+	filter := map[string]interface{}{"should": conds}
 	points, err := s.chunks.Search(ctx, vec, limit, filter, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Fall back to flat if no results in filtered folders.
 	if len(points) == 0 {
 		return s.flatSearch(ctx, vec, limit)
 	}
@@ -162,12 +167,11 @@ func (s *Server) flatSearch(ctx context.Context, vec []float32, limit int) ([]qd
 	return s.chunks.Search(ctx, vec, limit, nil, nil)
 }
 
-func (s *Server) handleReindexDocuments(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if err := s.indexer.Run(ctx); err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("reindex error: %v", err)), nil
-	}
-	var sb strings.Builder
-	sb.WriteString("Reindex complete. Documents directory: ")
-	sb.WriteString(s.cfg.RAGDocumentsDir)
-	return mcp.NewToolResultText(sb.String()), nil
+func (s *Server) handleReindexDocuments(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	go func() {
+		if err := s.indexer.Run(context.Background()); err != nil {
+			slog.Error("background reindex failed", "error", err)
+		}
+	}()
+	return mcp.NewToolResultText(fmt.Sprintf("Reindex started in background. Directory: %s", s.cfg.RAGDocumentsDir)), nil
 }

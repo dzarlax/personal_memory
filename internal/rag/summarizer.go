@@ -27,8 +27,9 @@ func folderSummary(dir string) (string, error) {
 	var topics []string
 	seenTopics := map[string]bool{}
 	var snippets []string
+	textFileCount := 0
 
-	for i, fname := range files {
+	for _, fname := range files {
 		ext := strings.ToLower(filepath.Ext(fname))
 		if ext != ".md" && ext != ".txt" && ext != ".markdown" {
 			continue
@@ -39,9 +40,10 @@ func folderSummary(dir string) (string, error) {
 			seenTopics[heading] = true
 			topics = append(topics, heading)
 		}
-		if snippet != "" && i < 5 {
+		if snippet != "" && textFileCount < 5 {
 			snippets = append(snippets, snippet)
 		}
+		textFileCount++
 	}
 
 	var sb strings.Builder
@@ -73,13 +75,15 @@ func firstHeadingAndSnippet(path string) (heading, snippet string) {
 		if line == "" {
 			continue
 		}
-		if strings.HasPrefix(line, "# ") || strings.HasPrefix(line, "## ") {
+		if strings.HasPrefix(line, "#") {
 			if heading == "" {
-				heading = strings.TrimSpace(strings.TrimLeft(line, "#"))
+				if i := strings.Index(line, " "); i >= 0 {
+					heading = strings.TrimSpace(line[i+1:])
+				}
 			}
 			continue
 		}
-		if snippet == "" && !strings.HasPrefix(line, "#") {
+		if snippet == "" {
 			if len(line) > 120 {
 				line = line[:120] + "…"
 			}

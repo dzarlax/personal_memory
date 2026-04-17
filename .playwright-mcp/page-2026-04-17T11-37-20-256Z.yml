@@ -1,0 +1,475 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fcoleam00%2Fclaude-memory-compiler
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=coleam00%2Fclaude-memory-compiler
+            - button "Appearance settings" [disabled] [ref=e58]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "coleam00" [ref=e70] [cursor=pointer]:
+            - /url: /coleam00
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "claude-memory-compiler" [ref=e73] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fcoleam00%2Fclaude-memory-compiler
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 210" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fcoleam00%2Fclaude-memory-compiler
+                - img [ref=e82]
+                - text: Fork
+                - generic "210" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fcoleam00%2Fclaude-memory-compiler
+                - img [ref=e88]
+                - text: Star
+                - generic "772 users starred this repository" [ref=e90]: "772"
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues 9" [ref=e99] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+              - generic "9" [ref=e104]
+          - listitem [ref=e105]:
+            - link "Pull requests 4" [ref=e106] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/pulls
+              - img [ref=e107]
+              - generic [ref=e109]: Pull requests
+              - generic "4" [ref=e110]
+          - listitem [ref=e111]:
+            - link "Actions" [ref=e112] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/actions
+              - img [ref=e113]
+              - generic [ref=e115]: Actions
+          - listitem [ref=e116]:
+            - link "Projects" [ref=e117] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/projects
+              - img [ref=e118]
+              - generic [ref=e120]: Projects
+          - listitem [ref=e121]:
+            - link "Security and quality" [ref=e122] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/security
+              - img [ref=e123]
+              - generic [ref=e125]: Security and quality
+          - listitem [ref=e126]:
+            - link "Insights" [ref=e127] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/pulse
+              - img [ref=e128]
+              - generic [ref=e130]: Insights
+    - generic [ref=e143]:
+      - heading "coleam00/claude-memory-compiler" [level=1] [ref=e145]
+      - generic [ref=e146]:
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - button "main branch" [ref=e153] [cursor=pointer]:
+                - generic [ref=e154]:
+                  - generic [ref=e156]:
+                    - img [ref=e158]
+                    - generic [ref=e161]: main
+                  - generic:
+                    - img
+              - generic [ref=e162]:
+                - link "Branches" [ref=e163] [cursor=pointer]:
+                  - /url: /coleam00/claude-memory-compiler/branches
+                  - generic [ref=e164]:
+                    - generic:
+                      - img
+                    - generic [ref=e165]: Branches
+                - link "Tags" [ref=e166] [cursor=pointer]:
+                  - /url: /coleam00/claude-memory-compiler/tags
+                  - generic [ref=e167]:
+                    - generic:
+                      - img
+                    - generic [ref=e168]: Tags
+            - generic [ref=e169]:
+              - generic [ref=e173]:
+                - img [ref=e175]
+                - combobox "Go to file" [ref=e177]
+              - button "Code" [ref=e178] [cursor=pointer]:
+                - generic [ref=e179]:
+                  - generic:
+                    - img
+                  - generic [ref=e180]: Code
+                  - generic:
+                    - img
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - heading "Folders and files" [level=2] [ref=e183]
+              - table "Folders and files" [ref=e184]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e185]:
+                  - row "Latest commit History 2 Commits" [ref=e186]:
+                    - cell "Latest commit History 2 Commits" [ref=e187]:
+                      - generic [ref=e188]:
+                        - heading "Latest commit" [level=2] [ref=e189]
+                        - generic [ref=e192]:
+                          - heading "History" [level=2] [ref=e193]
+                          - link "2 Commits" [ref=e194] [cursor=pointer]:
+                            - /url: /coleam00/claude-memory-compiler/commits/main/
+                            - generic [ref=e195]:
+                              - generic:
+                                - img
+                              - generic [ref=e196]: 2 Commits
+                  - row ".claude, (Directory)" [ref=e197]:
+                    - cell ".claude, (Directory)" [ref=e198]:
+                      - generic [ref=e199]:
+                        - img [ref=e200]
+                        - link ".claude, (Directory)" [ref=e205] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/tree/main/.claude
+                          - text: .claude
+                    - cell [ref=e206]
+                    - cell [ref=e208]
+                  - row "hooks, (Directory)" [ref=e211]:
+                    - cell "hooks, (Directory)" [ref=e212]:
+                      - generic [ref=e213]:
+                        - img [ref=e214]
+                        - link "hooks, (Directory)" [ref=e219] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/tree/main/hooks
+                          - text: hooks
+                    - cell [ref=e220]
+                    - cell [ref=e222]
+                  - row "scripts, (Directory)" [ref=e225]:
+                    - cell "scripts, (Directory)" [ref=e226]:
+                      - generic [ref=e227]:
+                        - img [ref=e228]
+                        - link "scripts, (Directory)" [ref=e233] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/tree/main/scripts
+                          - text: scripts
+                    - cell [ref=e234]
+                    - cell [ref=e236]
+                  - row ".gitignore, (File)" [ref=e239]:
+                    - cell ".gitignore, (File)" [ref=e240]:
+                      - generic [ref=e241]:
+                        - img [ref=e242]
+                        - link ".gitignore, (File)" [ref=e247] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/blob/main/.gitignore
+                          - text: .gitignore
+                    - cell [ref=e248]
+                    - cell [ref=e250]
+                  - row "AGENTS.md, (File)" [ref=e253]:
+                    - cell "AGENTS.md, (File)" [ref=e254]:
+                      - generic [ref=e255]:
+                        - img [ref=e256]
+                        - link "AGENTS.md, (File)" [ref=e261] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/blob/main/AGENTS.md
+                          - text: AGENTS.md
+                    - cell [ref=e262]
+                    - cell [ref=e264]
+                  - row "README.md, (File)" [ref=e267]:
+                    - cell "README.md, (File)" [ref=e268]:
+                      - generic [ref=e269]:
+                        - img [ref=e270]
+                        - link "README.md, (File)" [ref=e275] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/blob/main/README.md
+                          - text: README.md
+                    - cell [ref=e276]
+                    - cell [ref=e278]
+                  - row "pyproject.toml, (File)" [ref=e281]:
+                    - cell "pyproject.toml, (File)" [ref=e282]:
+                      - generic [ref=e283]:
+                        - img [ref=e284]
+                        - link "pyproject.toml, (File)" [ref=e289] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/blob/main/pyproject.toml
+                          - text: pyproject.toml
+                    - cell [ref=e290]
+                    - cell [ref=e292]
+                  - row "uv.lock, (File)" [ref=e295]:
+                    - cell "uv.lock, (File)" [ref=e296]:
+                      - generic [ref=e297]:
+                        - img [ref=e298]
+                        - link "uv.lock, (File)" [ref=e303] [cursor=pointer]:
+                          - /url: /coleam00/claude-memory-compiler/blob/main/uv.lock
+                          - text: uv.lock
+                    - cell [ref=e304]
+                    - cell [ref=e306]
+            - generic [ref=e310]:
+              - generic [ref=e311]:
+                - heading "Repository files navigation" [level=2] [ref=e312]
+                - navigation "Repository files" [ref=e313]:
+                  - list [ref=e314]:
+                    - listitem [ref=e315]:
+                      - link "README" [ref=e316] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e318]
+                        - generic [ref=e320]: README
+                - button "Outline" [ref=e321] [cursor=pointer]:
+                  - img [ref=e322]
+              - article [ref=e325]:
+                - generic [ref=e326]:
+                  - heading "LLM Personal Knowledge Base" [level=1] [ref=e327]
+                  - 'link "Permalink: LLM Personal Knowledge Base" [ref=e328] [cursor=pointer]':
+                    - /url: "#llm-personal-knowledge-base"
+                    - img [ref=e329]
+                - paragraph [ref=e331]:
+                  - strong [ref=e332]: Your AI conversations compile themselves into a searchable knowledge base.
+                - paragraph [ref=e333]:
+                  - text: Adapted from
+                  - link "Karpathy's LLM Knowledge Base" [ref=e334] [cursor=pointer]:
+                    - /url: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
+                  - text: architecture, but instead of clipping web articles, the raw data is your own conversations with Claude Code. When a session ends (or auto-compacts mid-session), Claude Code hooks capture the conversation transcript and spawn a background process that uses the
+                  - link "Claude Agent SDK" [ref=e335] [cursor=pointer]:
+                    - /url: https://github.com/anthropics/claude-agent-sdk
+                  - text: to extract the important stuff - decisions, lessons learned, patterns, gotchas - and appends it to a daily log. You then compile those daily logs into structured, cross-referenced knowledge articles organized by concept. Retrieval uses a simple index file instead of RAG - no vector database, no embeddings, just markdown.
+                - paragraph [ref=e336]: Anthropic has clarified that personal use of the Claude Agent SDK is covered under your existing Claude subscription (Max, Team, or Enterprise) - no separate API credits needed. Unlike OpenClaw, which requires API billing for its memory flush, this runs on your subscription.
+                - generic [ref=e337]:
+                  - heading "Quick Start" [level=2] [ref=e338]
+                  - 'link "Permalink: Quick Start" [ref=e339] [cursor=pointer]':
+                    - /url: "#quick-start"
+                    - img [ref=e340]
+                - paragraph [ref=e342]: "Tell your AI coding agent:"
+                - blockquote [ref=e343]:
+                  - paragraph [ref=e344]:
+                    - text: "\"Clone"
+                    - link "https://github.com/coleam00/claude-memory-compiler" [ref=e345] [cursor=pointer]:
+                      - /url: https://github.com/coleam00/claude-memory-compiler
+                    - text: into this project. Set up the Claude Code hooks so my conversations automatically get captured into daily logs, compiled into a knowledge base, and injected back into future sessions. Read the AGENTS.md for the full technical reference on how everything works."
+                - paragraph [ref=e346]: "The agent will:"
+                - list [ref=e347]:
+                  - listitem [ref=e348]:
+                    - text: Clone the repo and run
+                    - code [ref=e349]: uv sync
+                    - text: to install dependencies
+                  - listitem [ref=e350]:
+                    - text: Copy
+                    - code [ref=e351]: .claude/settings.json
+                    - text: into your project (or merge the hooks into your existing settings)
+                  - listitem [ref=e352]: The hooks activate automatically next time you open Claude Code
+                - paragraph [ref=e353]:
+                  - text: From there, your conversations start accumulating. After 6 PM local time, the next session flush automatically triggers compilation of that day's logs into knowledge articles. You can also run
+                  - code [ref=e354]: uv run python scripts/compile.py
+                  - text: manually at any time.
+                - generic [ref=e355]:
+                  - heading "How It Works" [level=2] [ref=e356]
+                  - 'link "Permalink: How It Works" [ref=e357] [cursor=pointer]':
+                    - /url: "#how-it-works"
+                    - img [ref=e358]
+                - generic [ref=e360]:
+                  - code [ref=e362]: Conversation -> SessionEnd/PreCompact hooks -> flush.py extracts knowledge -> daily/YYYY-MM-DD.md -> compile.py -> knowledge/concepts/, connections/, qa/ -> SessionStart hook injects index into next session -> cycle repeats
+                  - button "Copy" [ref=e364] [cursor=pointer]:
+                    - img [ref=e365]
+                - list [ref=e368]:
+                  - listitem [ref=e369]:
+                    - strong [ref=e370]: Hooks
+                    - text: capture conversations automatically (session end + pre-compaction safety net)
+                  - listitem [ref=e371]:
+                    - strong [ref=e372]: flush.py
+                    - text: calls the Claude Agent SDK to decide what's worth saving, and after 6 PM triggers end-of-day compilation automatically
+                  - listitem [ref=e373]:
+                    - strong [ref=e374]: compile.py
+                    - text: turns daily logs into organized concept articles with cross-references (triggered automatically or run manually)
+                  - listitem [ref=e375]:
+                    - strong [ref=e376]: query.py
+                    - text: answers questions using index-guided retrieval (no RAG needed at personal scale)
+                  - listitem [ref=e377]:
+                    - strong [ref=e378]: lint.py
+                    - text: runs 7 health checks (broken links, orphans, contradictions, staleness)
+                - generic [ref=e379]:
+                  - heading "Key Commands" [level=2] [ref=e380]
+                  - 'link "Permalink: Key Commands" [ref=e381] [cursor=pointer]':
+                    - /url: "#key-commands"
+                    - img [ref=e382]
+                - generic [ref=e384]:
+                  - generic [ref=e385]:
+                    - text: uv run python scripts/compile.py
+                    - generic [ref=e386]: "# compile new daily logs"
+                    - text: uv run python scripts/query.py
+                    - generic [ref=e387]: "\"question\""
+                    - generic [ref=e388]: "# ask the knowledge base"
+                    - text: uv run python scripts/query.py
+                    - generic [ref=e389]: "\"question\""
+                    - text: "--file-back"
+                    - generic [ref=e390]: "# ask + save answer back"
+                    - text: uv run python scripts/lint.py
+                    - generic [ref=e391]: "# run health checks"
+                    - text: uv run python scripts/lint.py --structural-only
+                    - generic [ref=e392]: "# free structural checks only"
+                  - button "Copy" [ref=e394] [cursor=pointer]:
+                    - img [ref=e395]
+                - generic [ref=e398]:
+                  - heading "Why No RAG?" [level=2] [ref=e399]
+                  - 'link "Permalink: Why No RAG?" [ref=e400] [cursor=pointer]':
+                    - /url: "#why-no-rag"
+                    - img [ref=e401]
+                - paragraph [ref=e403]:
+                  - text: "Karpathy's insight: at personal scale (50-500 articles), the LLM reading a structured"
+                  - code [ref=e404]: index.md
+                  - text: outperforms vector similarity. The LLM understands what you're really asking; cosine similarity just finds similar words. RAG becomes necessary at ~2,000+ articles when the index exceeds the context window.
+                - generic [ref=e405]:
+                  - heading "Technical Reference" [level=2] [ref=e406]
+                  - 'link "Permalink: Technical Reference" [ref=e407] [cursor=pointer]':
+                    - /url: "#technical-reference"
+                    - img [ref=e408]
+                - paragraph [ref=e410]:
+                  - text: See
+                  - strong [ref=e411]:
+                    - link "AGENTS.md" [ref=e412] [cursor=pointer]:
+                      - /url: /coleam00/claude-memory-compiler/blob/main/AGENTS.md
+                  - text: "for the complete technical reference: article formats, hook architecture, script internals, cross-platform details, costs, and customization options. AGENTS.md is designed to give an AI agent everything it needs to understand, modify, or rebuild the system."
+        - generic [ref=e416]:
+          - generic [ref=e419]:
+            - heading "About" [level=2] [ref=e420]
+            - paragraph [ref=e421]: Give Claude Code a memory that evolves with your codebase. Hooks automatically capture sessions, the Claude Agent SDK extracts key decisions and lessons, and an LLM compiler organizes everything into structured, cross-referenced knowledge articles - inspired by Karpathy's LLM Knowledge Base architecture.
+            - heading "Resources" [level=3] [ref=e422]
+            - link "Readme" [ref=e424] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+              - img [ref=e425]
+              - text: Readme
+            - link "Activity" [ref=e428] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/activity
+              - img [ref=e429]
+              - text: Activity
+            - heading "Stars" [level=3] [ref=e431]
+            - link "772 stars" [ref=e433] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/stargazers
+              - img [ref=e434]
+              - strong [ref=e436]: "772"
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e437]
+            - link "15 watching" [ref=e439] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/watchers
+              - img [ref=e440]
+              - strong [ref=e442]: "15"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e443]
+            - link "210 forks" [ref=e445] [cursor=pointer]:
+              - /url: /coleam00/claude-memory-compiler/forks
+              - img [ref=e446]
+              - strong [ref=e448]: "210"
+              - text: forks
+            - link "Report repository" [ref=e450] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fcoleam00%2Fclaude-memory-compiler&report=coleam00+%28user%29
+          - generic [ref=e452]:
+            - heading "Releases" [level=2] [ref=e453]:
+              - link "Releases" [ref=e454] [cursor=pointer]:
+                - /url: /coleam00/claude-memory-compiler/releases
+            - generic [ref=e455]: No releases published
+          - generic "Loading latest packages" [ref=e458]:
+            - heading "Packages" [level=2] [ref=e459]:
+              - link "Packages" [ref=e460] [cursor=pointer]:
+                - /url: /users/coleam00/packages?repo_name=claude-memory-compiler
+          - generic [ref=e471]:
+            - heading "Contributors 1" [level=2] [ref=e472]:
+              - link "Contributors 1" [ref=e473] [cursor=pointer]:
+                - /url: /coleam00/claude-memory-compiler/graphs/contributors
+                - text: Contributors
+                - generic "1" [ref=e474]
+            - list [ref=e475]:
+              - listitem [ref=e476]:
+                - link "@coleam00" [ref=e477] [cursor=pointer]:
+                  - /url: https://github.com/coleam00
+                  - img "@coleam00" [ref=e478]
+                - link "coleam00 Cole Medin" [ref=e480] [cursor=pointer]:
+                  - /url: https://github.com/coleam00
+                  - strong [ref=e481]: coleam00
+                  - text: Cole Medin
+          - generic [ref=e483]:
+            - heading "Languages" [level=2] [ref=e484]
+            - list [ref=e488]:
+              - listitem [ref=e489]:
+                - link "Python 100.0%" [ref=e490] [cursor=pointer]:
+                  - /url: /coleam00/claude-memory-compiler/search?l=python
+                  - img [ref=e491]
+                  - generic [ref=e493]: Python
+                  - generic [ref=e494]: 100.0%
+  - contentinfo [ref=e496]:
+    - heading "Footer" [level=2] [ref=e497]
+    - generic [ref=e498]:
+      - generic [ref=e499]:
+        - link "GitHub Homepage" [ref=e500] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e501]
+        - generic [ref=e503]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e504]:
+        - heading "Footer navigation" [level=3] [ref=e505]
+        - list "Footer navigation" [ref=e506]:
+          - listitem [ref=e507]:
+            - link "Terms" [ref=e508] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e509]:
+            - link "Privacy" [ref=e510] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e511]:
+            - link "Security" [ref=e512] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e513]:
+            - link "Status" [ref=e514] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e515]:
+            - link "Community" [ref=e516] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e517]:
+            - link "Docs" [ref=e518] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e519]:
+            - link "Contact" [ref=e520] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e521]:
+            - button "Manage cookies" [ref=e523] [cursor=pointer]
+          - listitem [ref=e524]:
+            - button "Do not share my personal information" [ref=e526] [cursor=pointer]

@@ -28,17 +28,9 @@ func main() {
 	qcFolders := qdrant.NewClient(cfg.QdrantURL, cfg.RAGCollectionFolders)
 	ec := embeddings.NewClient(cfg.EmbedURL)
 
-	// Ensure collections exist.
-	initVec, err := ec.Embed(ctx, "init")
-	if err != nil {
-		slog.Error("failed to embed init vector", "error", err)
+	if err := rag.InitCollections(ctx, qcChunks, qcFolders, ec); err != nil {
+		slog.Error("failed to init RAG collections", "error", err)
 		os.Exit(1)
-	}
-	for _, qc := range []*qdrant.Client{qcChunks, qcFolders} {
-		if err := qc.EnsureCollection(ctx, len(initVec)); err != nil {
-			slog.Error("failed to ensure collection", "error", err)
-			os.Exit(1)
-		}
 	}
 
 	indexer := rag.NewIndexer(qcChunks, qcFolders, ec, cfg.RAGDocumentsDir, cfg.RAGChunkMaxBytes)

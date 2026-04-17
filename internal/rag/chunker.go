@@ -78,9 +78,12 @@ func splitByHeadings(text string) []section {
 	}
 
 	for _, line := range lines {
-		if strings.HasPrefix(line, "## ") || strings.HasPrefix(line, "### ") {
+		// Match H1, H2, H3 headings.
+		if strings.HasPrefix(line, "# ") || strings.HasPrefix(line, "## ") || strings.HasPrefix(line, "### ") {
 			flush()
-			currentHeading = strings.TrimSpace(strings.TrimLeft(line, "#"))
+			if i := strings.Index(line, " "); i >= 0 {
+				currentHeading = strings.TrimSpace(line[i+1:])
+			}
 			buf.WriteString(line + "\n")
 		} else {
 			buf.WriteString(line + "\n")
@@ -98,12 +101,17 @@ func splitSentences(text string, maxBytes int) []string {
 			results = append(results, buf.String())
 			buf.Reset()
 		}
-		// If a single sentence is still too large, hard-split by rune count.
+		// If a single sentence is still too large, hard-split at rune boundaries.
 		if len(sentence) > maxBytes {
 			for len(sentence) > 0 {
 				n := maxBytes
-				for n > 0 && !utf8.RuneStart(sentence[n]) {
-					n--
+				if n >= len(sentence) {
+					n = len(sentence)
+				} else {
+					// Back up to the start of the current rune.
+					for n > 1 && !utf8.RuneStart(sentence[n]) {
+						n--
+					}
 				}
 				results = append(results, sentence[:n])
 				sentence = sentence[n:]
