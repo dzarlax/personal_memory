@@ -5,3 +5,7 @@ __pycache__/
 .mypy_cache/
 .mcp.json
 .playwright-mcp/
+
+# Design system bundle — fetched at build time from dzarlax/design-system
+# so image builds auto-pick up upstream updates. Dev fetch: `make dev-deps`.
+internal/viz/static/assets/vendor/

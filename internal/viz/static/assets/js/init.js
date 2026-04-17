@@ -11,16 +11,16 @@ function parseTabFromPath() {
 }
 
 function isTabAvailable(name) {
-  const el = document.querySelector(`[data-view="${name}"]`);
+  const el = document.querySelector(`.tab-nav-item[data-view="${name}"]`);
   return el && el.style.display !== 'none';
 }
 
 function activateTab(name, pushHistory = true) {
   if (!isTabAvailable(name)) name = 'overview';
 
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-nav-item').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const tab = document.querySelector(`[data-view="${name}"]`);
+  const tab = document.querySelector(`.tab-nav-item[data-view="${name}"]`);
   if (tab) tab.classList.add('active');
   const view = document.getElementById(name + '-view');
   if (view) view.classList.add('active');
@@ -38,9 +38,15 @@ function activateTab(name, pushHistory = true) {
   }
 }
 
-// Tab clicks switch view AND update URL.
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => activateTab(tab.dataset.view));
+// Tab clicks switch view AND update URL. Anchors have real hrefs for
+// progressive enhancement (Cmd+click opens in new tab), so intercept
+// the default nav for in-page routing.
+document.querySelectorAll('.tab-nav-item').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) return; // let the browser handle
+    e.preventDefault();
+    activateTab(tab.dataset.view);
+  });
 });
 
 // Browser back/forward.

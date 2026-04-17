@@ -1,28 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dark-mode>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Memory Dashboard</title>
+<link rel="stylesheet" href="/viz/assets/vendor/dzarlax.css">
 <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script src="https://unpkg.com/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
 <link href="https://unpkg.com/vis-timeline@7.7.3/styles/vis-timeline-graph2d.min.css" rel="stylesheet">
 <link rel="stylesheet" href="/viz/assets/styles.css">
 </head>
 <body>
-  <div class="header">
+  <header class="viz-header">
     <h1>Memory Dashboard</h1>
-    <div class="stats" id="stats"></div>
-  </div>
+    <div class="viz-stats" id="stats"></div>
+  </header>
 
-  <div class="tabs">
-    <button class="tab" data-view="overview">Overview</button>
-    <button class="tab" data-view="duplicates">Duplicates <span class="badge" id="dup-badge">...</span></button>
-    <button class="tab" data-view="forgotten">Forgotten <span class="badge" id="forgot-badge">...</span></button>
-    <button class="tab" data-view="timeline">Timeline</button>
-    <button class="tab" data-view="graph">Graph</button>
-    <button class="tab" data-view="documents" id="docs-tab">Documents <span class="badge" id="docs-badge">...</span></button>
-  </div>
+  <nav class="tab-nav viz-tabs">
+    <a class="tab-nav-item" data-view="overview" href="/viz/overview">Overview</a>
+    <a class="tab-nav-item" data-view="duplicates" href="/viz/duplicates">Duplicates <span class="badge badge--neutral" id="dup-badge">0</span></a>
+    <a class="tab-nav-item" data-view="forgotten" href="/viz/forgotten">Forgotten <span class="badge badge--neutral" id="forgot-badge">0</span></a>
+    <a class="tab-nav-item" data-view="timeline" href="/viz/timeline">Timeline</a>
+    <a class="tab-nav-item" data-view="graph" href="/viz/graph">Graph</a>
+    <a class="tab-nav-item" data-view="documents" href="/viz/documents" id="docs-tab">Documents <span class="badge badge--neutral" id="docs-badge">0</span></a>
+  </nav>
 
   <!-- VIEWS -->
 

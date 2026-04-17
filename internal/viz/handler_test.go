@@ -59,7 +59,6 @@ func TestBuildShellHTML_AssetsReferenced(t *testing.T) {
 		t.Fatalf("buildShellHTML: %v", err)
 	}
 	s := string(html)
-	// Sanity: all expected JS modules are linked.
 	for _, js := range []string{"shared.js", "overview.js", "duplicates.js", "forgotten.js", "timeline.js", "graph.js", "documents.js", "init.js"} {
 		if !strings.Contains(s, "/viz/assets/js/"+js) {
 			t.Errorf("shell does not reference %s", js)
@@ -67,6 +66,19 @@ func TestBuildShellHTML_AssetsReferenced(t *testing.T) {
 	}
 	if !strings.Contains(s, "/viz/assets/styles.css") {
 		t.Error("shell does not reference styles.css")
+	}
+	if !strings.Contains(s, "/viz/assets/vendor/dzarlax.css") {
+		t.Error("shell does not reference the design-system bundle")
+	}
+}
+
+func TestBuildShellHTML_DarkModeDefault(t *testing.T) {
+	html, err := buildShellHTML()
+	if err != nil {
+		t.Fatalf("buildShellHTML: %v", err)
+	}
+	if !strings.Contains(string(html), `dark-mode`) {
+		t.Error("shell should opt into the design-system dark theme via the dark-mode attribute")
 	}
 }
 
