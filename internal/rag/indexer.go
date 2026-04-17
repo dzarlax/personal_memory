@@ -232,10 +232,24 @@ func (idx *Indexer) indexFolder(ctx context.Context, dir string) error {
 	return idx.folders.Upsert(ctx, qdrant.Point{ID: id, Vector: vec, Payload: payload})
 }
 
-// cleanupStale removes Qdrant chunks for files no longer on disk. Aborts if
-// the walk was incomplete or if deletion would remove more than half the
-// known files — both cases suggest a transient filesystem issue rather than
-// intentional deletions.
+// staleCleanupDecision decides whether to skip removing Qdrant chunks for
+// files that aren't on disk. Returns (skip, reason). Suppressing cleanup on
+// unhealthy walks is what protects the index against transient FS glitches
+// (Resilio mid-sync, permission race) that would otherwise wipe large parts
+// of it. Kept pure so it can be unit-tested without Qdrant.
+func staleCleanupDecision(walkedFiles, knownFiles int, walkHadErrors bool) (skip bool, reason string) {
+	if walkHadErrors {
+		return true, "walk had errors"
+	}
+	// Guard only meaningful once we have something to compare against. On a
+	// fresh index (knownFiles == 0) there's nothing to delete anyway.
+	if knownFiles > 0 && walkedFiles*2 < knownFiles {
+		return true, "walked file count suspiciously low"
+	}
+	return false, ""
+}
+
+// cleanupStale removes Qdrant chunks for files no longer on disk.
 func (idx *Indexer) cleanupStale(
 	ctx context.Context,
 	state map[string]*fileState,
@@ -243,13 +257,11 @@ func (idx *Indexer) cleanupStale(
 	dirtyFolders map[string]bool,
 	walkHadErrors bool,
 ) {
-	if walkHadErrors {
-		slog.Warn("skipping stale cleanup: walk had errors")
-		return
-	}
-	if len(state) > 0 && len(walkedFiles)*2 < len(state) {
-		slog.Warn("skipping stale cleanup: walked file count suspiciously low",
-			"walked", len(walkedFiles), "in_qdrant", len(state))
+	if skip, reason := staleCleanupDecision(len(walkedFiles), len(state), walkHadErrors); skip {
+		slog.Warn("skipping stale cleanup",
+			"reason", reason,
+			"walked", len(walkedFiles),
+			"in_qdrant", len(state))
 		return
 	}
 

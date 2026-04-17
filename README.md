@@ -335,6 +335,20 @@ docker build -t personal-memory .
 
 The resulting image ships `/personal-memory` (the MCP server, set as ENTRYPOINT) and `/personal-memory-indexer` (standalone RAG indexer for cron / one-shot use).
 
+### Image tags (GHCR)
+
+`.github/workflows/docker.yml` runs `go vet` + `go test`, builds, and pushes to `ghcr.io/dzarlax-ai/personal-memory` on every push to `main` or any `feature/**` branch.
+
+| Tag | Source | Use case |
+|---|---|---|
+| `latest` | `main` only | Stable production deploy |
+| `main` | `main` | Pinned alias for `latest` |
+| `beta` | any `feature/**` push (moves) | Testing the newest feature-branch build |
+| `feature-<name>` | the matching branch | Pinning to a specific feature (e.g. `feature-rag`) |
+| `sha-<short>` | every push | Reproducible pin by commit |
+
+To test a feature branch before merging: point your deploy's `image:` at `:beta` or `:feature-<name>`, run, verify, then merge to `main` and switch back to `:latest`.
+
 ## Project Layout
 
 ```
