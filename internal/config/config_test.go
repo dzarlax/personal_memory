@@ -64,6 +64,45 @@ func TestLoadOAuthConfigCSV(t *testing.T) {
 	}
 }
 
+func TestLoadOAuthConfigAdditionalIssuersArePublished(t *testing.T) {
+	t.Setenv("OAUTH_ENABLED", "true")
+	t.Setenv("OAUTH_ISSUER", "https://auth.example.com/application/o/chatgpt/")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "https://auth.example.com/application/o/gemini/")
+	t.Setenv("OAUTH_AUTHORIZATION_SERVERS", "")
+
+	cfg, err := loadOAuthConfig("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(cfg.AdditionalIssuers, []string{"https://auth.example.com/application/o/gemini/"}) {
+		t.Fatalf("additional issuers = %#v", cfg.AdditionalIssuers)
+	}
+	wantServers := []string{"https://auth.example.com/application/o/chatgpt/", "https://auth.example.com/application/o/gemini/"}
+	if !reflect.DeepEqual(cfg.AuthorizationServers, wantServers) {
+		t.Fatalf("authorization servers = %#v, want %#v", cfg.AuthorizationServers, wantServers)
+	}
+}
+
+func TestLoadRejectsDuplicateAdditionalOAuthIssuer(t *testing.T) {
+	setSecureTestEnv(t)
+	t.Setenv("OAUTH_ENABLED", "true")
+	t.Setenv("OAUTH_ISSUER", "https://auth.example.com/application/o/chatgpt/")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "https://auth.example.com/application/o/chatgpt/")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "duplicate or primary") {
+		t.Fatalf("Load() error = %v, want duplicate issuer rejection", err)
+	}
+}
+
+func TestLoadRejectsEmptyAdditionalOAuthIssuer(t *testing.T) {
+	setSecureTestEnv(t)
+	t.Setenv("OAUTH_ENABLED", "true")
+	t.Setenv("OAUTH_ISSUER", "https://auth.example.com/application/o/chatgpt/")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "https://auth.example.com/application/o/gemini/,,https://auth.example.com/application/o/other/")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "must not contain empty values") {
+		t.Fatalf("Load() error = %v, want empty issuer rejection", err)
+	}
+}
+
 func TestLoadRejectsMalformedTypedEnvironment(t *testing.T) {
 	t.Setenv("KEEP_SNAPSHOTS", "seven")
 	if _, err := Load(); err == nil {

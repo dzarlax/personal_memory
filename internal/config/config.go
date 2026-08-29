@@ -77,6 +77,7 @@ type Config struct {
 type OAuthConfig struct {
 	Enabled               bool
 	Issuer                string
+	AdditionalIssuers     []string
 	Resource              string
 	Audience              string
 	JWKSURL               string
@@ -263,10 +264,16 @@ func loadOAuthConfig(memoryDomain string) (OAuthConfig, error) {
 	}
 
 	issuer := os.Getenv("OAUTH_ISSUER")
-	authServers := envCSV("OAUTH_AUTHORIZATION_SERVERS")
-	if len(authServers) == 0 && issuer != "" {
-		authServers = []string{issuer}
+	additionalIssuers, err := nonEmptyEnvCSV("OAUTH_ADDITIONAL_ISSUERS")
+	if err != nil {
+		return OAuthConfig{}, err
 	}
+	authServers := envCSV("OAUTH_AUTHORIZATION_SERVERS")
+	if issuer != "" {
+		authServers = append(authServers, issuer)
+	}
+	authServers = append(authServers, additionalIssuers...)
+	authServers = uniqueStrings(authServers)
 
 	scopes := envCSV("OAUTH_SCOPES")
 	if len(scopes) == 0 {
@@ -285,6 +292,7 @@ func loadOAuthConfig(memoryDomain string) (OAuthConfig, error) {
 	return OAuthConfig{
 		Enabled:               enabled,
 		Issuer:                issuer,
+		AdditionalIssuers:     additionalIssuers,
 		Resource:              resource,
 		Audience:              audience,
 		JWKSURL:               os.Getenv("OAUTH_JWKS_URL"),
@@ -347,6 +355,16 @@ func (c *Config) Validate() error {
 	if c.OAuth.Enabled {
 		if err := validateHTTPURL("OAUTH_ISSUER", c.OAuth.Issuer); err != nil {
 			return err
+		}
+		seenIssuers := map[string]bool{c.OAuth.Issuer: true}
+		for _, issuer := range c.OAuth.AdditionalIssuers {
+			if err := validateHTTPURL("OAUTH_ADDITIONAL_ISSUERS", issuer); err != nil {
+				return err
+			}
+			if seenIssuers[issuer] {
+				return fmt.Errorf("OAUTH_ADDITIONAL_ISSUERS must not contain duplicate or primary issuer %q", issuer)
+			}
+			seenIssuers[issuer] = true
 		}
 		if err := validateHTTPURL("OAUTH_RESOURCE", c.OAuth.Resource); err != nil {
 			return err
@@ -470,6 +488,35 @@ func envCSV(key string) []string {
 		part = strings.TrimSpace(part)
 		if part != "" {
 			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func nonEmptyEnvCSV(key string) ([]string, error) {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return nil, nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value == "" {
+			return nil, fmt.Errorf("%s must not contain empty values", key)
+		}
+		out = append(out, value)
+	}
+	return out, nil
+}
+
+func uniqueStrings(values []string) []string {
+	seen := make(map[string]bool, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if value != "" && !seen[value] {
+			seen[value] = true
+			out = append(out, value)
 		}
 	}
 	return out

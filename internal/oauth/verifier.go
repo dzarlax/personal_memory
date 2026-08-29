@@ -25,6 +25,35 @@ type TokenVerifier interface {
 	Verify(ctx context.Context, token string) (*Claims, error)
 }
 
+// AnyVerifier accepts a token only when one explicitly configured verifier
+// validates its signature, issuer, audience, expiry, and required scopes.
+type AnyVerifier struct {
+	verifiers []TokenVerifier
+}
+
+func NewAnyVerifier(verifiers ...TokenVerifier) (*AnyVerifier, error) {
+	filtered := make([]TokenVerifier, 0, len(verifiers))
+	for _, verifier := range verifiers {
+		if verifier != nil {
+			filtered = append(filtered, verifier)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil, errors.New("at least one token verifier is required")
+	}
+	return &AnyVerifier{verifiers: filtered}, nil
+}
+
+func (v *AnyVerifier) Verify(ctx context.Context, token string) (*Claims, error) {
+	for _, verifier := range v.verifiers {
+		claims, err := verifier.Verify(ctx, token)
+		if err == nil {
+			return claims, nil
+		}
+	}
+	return nil, errors.New("token was not accepted by a configured issuer")
+}
+
 type JWTVerifierConfig struct {
 	Issuer   string
 	Audience string

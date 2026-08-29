@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -109,6 +110,122 @@ func TestJWTVerifierRequiresExpirationClaim(t *testing.T) {
 	if !strings.Contains(err.Error(), "exp") {
 		t.Fatalf("expected exp-related error, got %v", err)
 	}
+}
+
+type verifierFunc func(context.Context, string) (*Claims, error)
+
+func (f verifierFunc) Verify(ctx context.Context, token string) (*Claims, error) {
+	return f(ctx, token)
+}
+
+func TestAnyVerifierAcceptsOnlyConfiguredVerifier(t *testing.T) {
+	rejected := verifierFunc(func(context.Context, string) (*Claims, error) { return nil, errors.New("rejected") })
+	accepted := verifierFunc(func(context.Context, string) (*Claims, error) { return &Claims{Subject: "alexey"}, nil })
+
+	verifier, err := NewAnyVerifier(rejected, accepted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims, err := verifier.Verify(context.Background(), "token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claims.Subject != "alexey" {
+		t.Fatalf("subject = %q, want alexey", claims.Subject)
+	}
+}
+
+func TestAnyVerifierRejectsEmptyOrUnacceptedSet(t *testing.T) {
+	if _, err := NewAnyVerifier(); err == nil {
+		t.Fatal("expected empty verifier set to fail")
+	}
+	verifier, err := NewAnyVerifier(verifierFunc(func(context.Context, string) (*Claims, error) {
+		return nil, errors.New("rejected")
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := verifier.Verify(context.Background(), "token"); err == nil {
+		t.Fatal("expected unaccepted token to fail")
+	}
+}
+
+func TestAnyVerifierAcceptsEitherConfiguredJWTIssuer(t *testing.T) {
+	const audience = "https://mcp.example.com"
+	const scope = "memory:mcp"
+
+	primaryIssuer, primaryKey, primaryJWKS := testJWTVerifier(t, "https://auth.example.com/application/o/chatgpt/", audience, scope)
+	defer primaryJWKS.Close()
+	geminiIssuer, geminiKey, geminiJWKS := testJWTVerifier(t, "https://auth.example.com/application/o/gemini/", audience, scope)
+	defer geminiJWKS.Close()
+
+	verifier, err := NewAnyVerifier(primaryIssuer, geminiIssuer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name    string
+		issuer  string
+		key     *rsa.PrivateKey
+		subject string
+	}{
+		{name: "primary", issuer: "https://auth.example.com/application/o/chatgpt/", key: primaryKey, subject: "chatgpt-user"},
+		{name: "gemini", issuer: "https://auth.example.com/application/o/gemini/", key: geminiKey, subject: "gemini-user"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			claims, err := verifier.Verify(context.Background(), signedTestToken(t, tc.issuer, audience, scope, tc.subject, tc.key))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if claims.Subject != tc.subject {
+				t.Fatalf("subject = %q, want %q", claims.Subject, tc.subject)
+			}
+		})
+	}
+
+	wrongIssuerToken := signedTestToken(t, "https://auth.example.com/application/o/untrusted/", audience, scope, "untrusted-user", primaryKey)
+	if _, err := verifier.Verify(context.Background(), wrongIssuerToken); err == nil {
+		t.Fatal("expected token from an unconfigured issuer to fail")
+	}
+	wrongScopeToken := signedTestToken(t, "https://auth.example.com/application/o/gemini/", audience, "profile", "gemini-user", geminiKey)
+	if _, err := verifier.Verify(context.Background(), wrongScopeToken); err == nil {
+		t.Fatal("expected token without required scope to fail")
+	}
+}
+
+func testJWTVerifier(t *testing.T, issuer, audience, scope string) (*JWTVerifier, *rsa.PrivateKey, *httptest.Server) {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwks := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"keys": []map[string]string{rsaJWK("test-key", &key.PublicKey)},
+		})
+	}))
+	verifier, err := NewJWTVerifier(JWTVerifierConfig{
+		Issuer: issuer, Audience: audience, JWKSURL: jwks.URL, Scopes: []string{scope},
+	})
+	if err != nil {
+		jwks.Close()
+		t.Fatal(err)
+	}
+	return verifier, key, jwks
+}
+
+func signedTestToken(t *testing.T, issuer, audience, scope, subject string, key *rsa.PrivateKey) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"iss": issuer, "aud": audience, "sub": subject, "scope": scope,
+		"iat": time.Now().Unix(), "exp": time.Now().Add(time.Hour).Unix(),
+	})
+	token.Header["kid"] = "test-key"
+	signed, err := token.SignedString(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signed
 }
 
 func rsaJWK(kid string, key *rsa.PublicKey) map[string]string {

@@ -88,3 +88,41 @@ create a sample fact as a smoke test.
 The quick path also provides `quick-update`, `quick-verify`, and `quick-rollback`. Update and verify preserve the installed Documents setting unless you explicitly pass `--with-documents` or `--memory-only`. Add `--json` for machine-readable, content-free output.
 
 The bundle also supports ChatGPT (manual UI/admin step) and generic MCP hosts through its advanced interface. See the [integration bundle guide](../../integration-bundle/guide/).
+
+## Gemini Spark (manual OAuth setup)
+
+Gemini Spark custom apps can connect to the remote `/memory` endpoint through
+OAuth. This is a manual, production-admin flow: do not reuse a ChatGPT client
+secret, an API key, or an existing OAuth client for Gemini.
+
+1. In Gemini Spark, open **Connected apps** → **Custom apps**, enter the MCP
+   URL `https://mcp.example.com/memory`, then open **Advanced settings**. Copy
+   the redirect URI shown there. Gemini uses the client ID and secret that the
+   OAuth provider issues in the next step.
+2. In Authentik, create a separate confidential OAuth/OIDC provider and
+   application for Gemini. Allow only that exact redirect URI, use the
+   authorization-code flow with PKCE (S256), restrict access to the intended
+   user/group, and grant only the `memory:mcp` scope. Configure its access-token
+   audience to the Memory protected-resource URL.
+3. Add the new provider's exact issuer URL to
+   `OAUTH_ADDITIONAL_ISSUERS` in the production Memory configuration. Keep the
+   existing `OAUTH_ISSUER` unchanged. The server discovers and verifies the
+   additional issuer's JWKS independently, and publishes both authorization
+   servers in its protected-resource metadata.
+4. Deploy a reviewed immutable application image and restart only `memory-mcp`.
+   Before opening the Gemini consent screen, confirm that
+   `/.well-known/oauth-protected-resource` lists both issuer URLs and that an
+   unauthenticated `/memory` request still returns the OAuth Bearer challenge.
+5. Enter the Gemini-specific client ID and secret in Gemini's **Advanced
+   settings**, complete consent, verify tool discovery, then make one read-only
+   call such as `recall_facts`. Do not use a write tool as the first smoke test.
+
+Keep the client secret only in Authentik and Gemini; never put it in `.env`,
+the repository, a chat message, or server logs. If discovery or consent fails,
+remove the Gemini connected app and its Authentik client, then remove only that
+issuer from `OAUTH_ADDITIONAL_ISSUERS`. The existing client remains unaffected.
+
+Gemini availability and the Custom apps interface are controlled by Google and
+may vary by account, region, language, or rollout. See Google's [Custom apps
+help](https://support.google.com/gemini/answer/17209137) for current product
+requirements.
