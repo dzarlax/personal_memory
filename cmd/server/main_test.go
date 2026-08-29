@@ -115,3 +115,41 @@ func TestMemoryAuthRequiredOnlyBypassesForExplicitEmptyDevelopmentMode(t *testin
 		})
 	}
 }
+
+func TestMCPEndpointHandlerAcceptsHeadWithoutCallingMCP(t *testing.T) {
+	called := false
+	handler := mcpEndpointHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusTeapot)
+	}))
+
+	req := httptest.NewRequest(http.MethodHead, "/memory", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("HEAD status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if called {
+		t.Fatal("HEAD probe reached the MCP handler")
+	}
+}
+
+func TestMCPEndpointHandlerDelegatesMCPMethods(t *testing.T) {
+	called := false
+	handler := mcpEndpointHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusAccepted)
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, "/memory", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("POST status = %d, want %d", rec.Code, http.StatusAccepted)
+	}
+	if !called {
+		t.Fatal("POST did not reach the MCP handler")
+	}
+}
