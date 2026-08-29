@@ -103,6 +103,7 @@ func main() {
 
 	var verifier oauthauth.TokenVerifier
 	if cfg.OAuth.Enabled {
+		verifiers := make([]oauthauth.IssuerTokenVerifier, 0, 1+len(cfg.OAuth.AdditionalIssuers))
 		jwksURL := cfg.OAuth.JWKSURL
 		if jwksURL == "" {
 			discovered, err := oauthauth.DiscoverJWKSURL(ctx, cfg.OAuth.Issuer)
@@ -112,8 +113,7 @@ func main() {
 			}
 			jwksURL = discovered
 		}
-		var err error
-		verifier, err = oauthauth.NewJWTVerifier(oauthauth.JWTVerifierConfig{
+		primaryVerifier, err := oauthauth.NewJWTVerifier(oauthauth.JWTVerifierConfig{
 			Issuer:   cfg.OAuth.Issuer,
 			Audience: cfg.OAuth.Audience,
 			JWKSURL:  jwksURL,
@@ -123,6 +123,27 @@ func main() {
 			slog.Error("failed to configure OAuth verifier", "error", err)
 			os.Exit(1)
 		}
+		verifiers = append(verifiers, primaryVerifier)
+		for _, issuer := range cfg.OAuth.AdditionalIssuers {
+			additionalJWKSURL, err := oauthauth.DiscoverJWKSURL(ctx, issuer)
+			if err != nil {
+				slog.Error("failed to discover additional OAuth JWKS URL", "error", err)
+				os.Exit(1)
+			}
+			additionalVerifier, err := oauthauth.NewJWTVerifier(oauthauth.JWTVerifierConfig{
+				Issuer: issuer, Audience: cfg.OAuth.Audience, JWKSURL: additionalJWKSURL, Scopes: cfg.OAuth.Scopes,
+			})
+			if err != nil {
+				slog.Error("failed to configure additional OAuth verifier", "error", err)
+				os.Exit(1)
+			}
+			verifiers = append(verifiers, additionalVerifier)
+		}
+		verifier, err = oauthauth.NewAnyVerifier(verifiers...)
+		if err != nil {
+			slog.Error("failed to configure OAuth verifier set", "error", err)
+			os.Exit(1)
+		}
 		metadata := oauthauth.NewProtectedResourceMetadata(oauthauth.MetadataConfig{
 			Resource:              cfg.OAuth.Resource,
 			AuthorizationServers:  cfg.OAuth.AuthorizationServers,
@@ -130,7 +151,7 @@ func main() {
 			ResourceDocumentation: cfg.OAuth.ResourceDocumentation,
 		})
 		r.Get("/.well-known/oauth-protected-resource", oauthauth.MetadataHandler(metadata))
-		slog.Info("OAuth MCP auth enabled", "issuer", cfg.OAuth.Issuer, "resource", cfg.OAuth.Resource)
+		slog.Info("OAuth MCP auth enabled", "issuer_count", len(verifiers), "resource", cfg.OAuth.Resource)
 	}
 
 	// RAG MCP (optional).

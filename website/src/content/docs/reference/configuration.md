@@ -55,10 +55,11 @@ Use `.env` (not source control) for deployment values. Required values are enfor
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OAUTH_ENABLED` | `false` | Enables OAuth on `/memory`; additive to API-key clients. |
-| `OAUTH_ISSUER` | none | Required when OAuth is enabled. |
+| `OAUTH_ISSUER` | none | Required HTTPS issuer URL when OAuth is enabled. |
+| `OAUTH_ADDITIONAL_ISSUERS` | none | Optional comma-separated exact HTTPS issuer URLs for separately reviewed OAuth clients. Empty entries, duplicates, and the primary issuer are rejected. Each additional issuer uses its own OIDC discovery and JWKS verification. |
 | `OAUTH_RESOURCE` | `https://mcp.<MEMORY_DOMAIN>` | Protected resource URL. |
 | `OAUTH_AUDIENCE` | `OAUTH_RESOURCE` | Expected token audience. |
 | `OAUTH_SCOPES` | `memory:mcp` | Comma-separated required scopes. |
-| `OAUTH_JWKS_URL` | discovered from issuer | Optional explicit JWKS URL. |
-| `OAUTH_AUTHORIZATION_SERVERS` | `OAUTH_ISSUER` | Optional comma-separated authorization servers. |
+| `OAUTH_JWKS_URL` | discovered from issuer | Optional explicit HTTPS JWKS URL. Discovery and JWKS requests reject redirects. |
+| `OAUTH_AUTHORIZATION_SERVERS` | primary and additional issuers | Optional comma-separated authorization servers. Configured issuers are always published in protected-resource metadata. |
 | `OAUTH_RESOURCE_DOCUMENTATION` | none | Optional resource documentation URL. |
