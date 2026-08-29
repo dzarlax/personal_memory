@@ -18,6 +18,7 @@ func TestLoadOAuthConfigDefaultsResourceFromMemoryDomain(t *testing.T) {
 	t.Setenv("OAUTH_RESOURCE", "")
 	t.Setenv("OAUTH_AUDIENCE", "")
 	t.Setenv("OAUTH_AUTHORIZATION_SERVERS", "")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "")
 
 	cfg, err := loadOAuthConfig("example.com")
 	if err != nil {
@@ -47,6 +48,8 @@ func TestLoadOAuthConfigCSV(t *testing.T) {
 	t.Setenv("OAUTH_AUDIENCE", "personal-memory")
 	t.Setenv("OAUTH_SCOPES", "memory:read, memory:write")
 	t.Setenv("OAUTH_AUTHORIZATION_SERVERS", "https://auth1.example.com, https://auth2.example.com")
+	t.Setenv("OAUTH_ISSUER", "")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "")
 
 	cfg, err := loadOAuthConfig("")
 	if err != nil {
@@ -101,6 +104,37 @@ func TestLoadRejectsEmptyAdditionalOAuthIssuer(t *testing.T) {
 	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "must not contain empty values") {
 		t.Fatalf("Load() error = %v, want empty issuer rejection", err)
 	}
+}
+
+func TestLoadRejectsInsecureOAuthURLs(t *testing.T) {
+	t.Run("primary", func(t *testing.T) {
+		setSecureTestEnv(t)
+		t.Setenv("OAUTH_ENABLED", "true")
+		t.Setenv("OAUTH_ISSUER", "http://auth.example.com/application/o/chatgpt/")
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), "valid HTTPS URL") {
+			t.Fatalf("Load() error = %v, want HTTPS issuer rejection", err)
+		}
+	})
+	t.Run("additional", func(t *testing.T) {
+		setSecureTestEnv(t)
+		t.Setenv("OAUTH_ENABLED", "true")
+		t.Setenv("OAUTH_ISSUER", "https://auth.example.com/application/o/chatgpt/")
+		t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "http://auth.example.com/application/o/gemini/")
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), "valid HTTPS URL") {
+			t.Fatalf("Load() error = %v, want HTTPS additional issuer rejection", err)
+		}
+	})
+	t.Run("jwks", func(t *testing.T) {
+		setSecureTestEnv(t)
+		t.Setenv("OAUTH_ENABLED", "true")
+		t.Setenv("OAUTH_ISSUER", "https://auth.example.com/application/o/chatgpt/")
+		t.Setenv("OAUTH_RESOURCE", "https://mcp.example.com")
+		t.Setenv("OAUTH_AUDIENCE", "https://mcp.example.com")
+		t.Setenv("OAUTH_JWKS_URL", "http://auth.example.com/jwks/")
+		if _, err := Load(); err == nil || !strings.Contains(err.Error(), "valid HTTPS URL") {
+			t.Fatalf("Load() error = %v, want HTTPS jwks rejection", err)
+		}
+	})
 }
 
 func TestLoadRejectsMalformedTypedEnvironment(t *testing.T) {
@@ -583,6 +617,7 @@ func setSecureTestEnv(t *testing.T) {
 	t.Setenv("VIZ_PROXY_SECRET", "")
 	t.Setenv("OAUTH_ENABLED", "false")
 	t.Setenv("OAUTH_ISSUER", "")
+	t.Setenv("OAUTH_ADDITIONAL_ISSUERS", "")
 	t.Setenv("OAUTH_RESOURCE", "")
 	t.Setenv("OAUTH_AUDIENCE", "")
 	t.Setenv("OAUTH_JWKS_URL", "")

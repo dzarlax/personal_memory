@@ -103,7 +103,7 @@ func main() {
 
 	var verifier oauthauth.TokenVerifier
 	if cfg.OAuth.Enabled {
-		verifiers := make([]oauthauth.TokenVerifier, 0, 1+len(cfg.OAuth.AdditionalIssuers))
+		verifiers := make([]oauthauth.IssuerTokenVerifier, 0, 1+len(cfg.OAuth.AdditionalIssuers))
 		jwksURL := cfg.OAuth.JWKSURL
 		if jwksURL == "" {
 			discovered, err := oauthauth.DiscoverJWKSURL(ctx, cfg.OAuth.Issuer)

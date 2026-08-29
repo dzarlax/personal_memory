@@ -353,12 +353,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("VIZ_PROXY_SECRET is required when ENABLE_VIZ=true")
 	}
 	if c.OAuth.Enabled {
-		if err := validateHTTPURL("OAUTH_ISSUER", c.OAuth.Issuer); err != nil {
+		if err := validateHTTPSURL("OAUTH_ISSUER", c.OAuth.Issuer); err != nil {
 			return err
 		}
 		seenIssuers := map[string]bool{c.OAuth.Issuer: true}
 		for _, issuer := range c.OAuth.AdditionalIssuers {
-			if err := validateHTTPURL("OAUTH_ADDITIONAL_ISSUERS", issuer); err != nil {
+			if err := validateHTTPSURL("OAUTH_ADDITIONAL_ISSUERS", issuer); err != nil {
 				return err
 			}
 			if seenIssuers[issuer] {
@@ -381,7 +381,7 @@ func (c *Config) Validate() error {
 			}
 		}
 		if c.OAuth.JWKSURL != "" {
-			if err := validateHTTPURL("OAUTH_JWKS_URL", c.OAuth.JWKSURL); err != nil {
+			if err := validateHTTPSURL("OAUTH_JWKS_URL", c.OAuth.JWKSURL); err != nil {
 				return err
 			}
 		}
@@ -447,6 +447,14 @@ func validateHTTPURL(name, raw string) error {
 	u, err := url.ParseRequestURI(raw)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return fmt.Errorf("%s must be a valid HTTP(S) URL", name)
+	}
+	return nil
+}
+
+func validateHTTPSURL(name, raw string) error {
+	u, err := url.ParseRequestURI(raw)
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return fmt.Errorf("%s must be a valid HTTPS URL", name)
 	}
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -46,6 +47,11 @@ func TestNewJWTVerifierRequiresConfig(t *testing.T) {
 	}); err == nil {
 		t.Fatal("expected missing jwks url error")
 	}
+	if _, err := NewJWTVerifier(JWTVerifierConfig{
+		Issuer: "https://auth.example.com", Audience: "https://mcp.example.com", JWKSURL: "http://auth.example.com/jwks/",
+	}); err == nil {
+		t.Fatal("expected insecure jwks url error")
+	}
 }
 
 func TestNewJWTVerifierPreservesIssuerAndSetsTimeout(t *testing.T) {
@@ -69,26 +75,8 @@ func TestNewJWTVerifierPreservesIssuerAndSetsTimeout(t *testing.T) {
 }
 
 func TestJWTVerifierRequiresExpirationClaim(t *testing.T) {
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatal(err)
-	}
-	jwks := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"keys": []map[string]string{rsaJWK("test-key", &key.PublicKey)},
-		})
-	}))
+	verifier, key, jwks := testJWTVerifier(t, "https://auth.example.com/application/o/personal-memory/", "https://mcp.example.com", "memory:mcp")
 	defer jwks.Close()
-
-	verifier, err := NewJWTVerifier(JWTVerifierConfig{
-		Issuer:   "https://auth.example.com/application/o/personal-memory/",
-		Audience: "https://mcp.example.com",
-		JWKSURL:  jwks.URL,
-		Scopes:   []string{"memory:mcp"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss":   "https://auth.example.com/application/o/personal-memory/",
@@ -112,21 +100,53 @@ func TestJWTVerifierRequiresExpirationClaim(t *testing.T) {
 	}
 }
 
-type verifierFunc func(context.Context, string) (*Claims, error)
+func TestJWTVerifierRejectsJWKSRedirect(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var targetHits atomic.Int32
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { targetHits.Add(1) }))
+	defer target.Close()
+	jwks := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusFound)
+	}))
+	defer jwks.Close()
+	verifier, err := NewJWTVerifier(JWTVerifierConfig{
+		Issuer: "https://auth.example.com/application/o/memory/", Audience: "https://mcp.example.com", JWKSURL: jwks.URL, Scopes: []string{"memory:mcp"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier.client = newNoRedirectHTTPClient(jwks.Client())
+	if _, err := verifier.Verify(context.Background(), signedTestToken(t, verifier.Issuer(), "https://mcp.example.com", "memory:mcp", "user", key)); err == nil {
+		t.Fatal("expected redirected jwks request to fail")
+	}
+	if targetHits.Load() != 0 {
+		t.Fatalf("redirect target was requested %d times", targetHits.Load())
+	}
+}
 
-func (f verifierFunc) Verify(ctx context.Context, token string) (*Claims, error) {
-	return f(ctx, token)
+type issuerVerifierFunc struct {
+	issuer string
+	verify func(context.Context, string) (*Claims, error)
+}
+
+func (f issuerVerifierFunc) Issuer() string { return f.issuer }
+
+func (f issuerVerifierFunc) Verify(ctx context.Context, token string) (*Claims, error) {
+	return f.verify(ctx, token)
 }
 
 func TestAnyVerifierAcceptsOnlyConfiguredVerifier(t *testing.T) {
-	rejected := verifierFunc(func(context.Context, string) (*Claims, error) { return nil, errors.New("rejected") })
-	accepted := verifierFunc(func(context.Context, string) (*Claims, error) { return &Claims{Subject: "alexey"}, nil })
+	rejected := issuerVerifierFunc{issuer: "https://auth.example.com/rejected", verify: func(context.Context, string) (*Claims, error) { return nil, errors.New("rejected") }}
+	accepted := issuerVerifierFunc{issuer: "https://auth.example.com/accepted", verify: func(context.Context, string) (*Claims, error) { return &Claims{Subject: "alexey"}, nil }}
 
 	verifier, err := NewAnyVerifier(rejected, accepted)
 	if err != nil {
 		t.Fatal(err)
 	}
-	claims, err := verifier.Verify(context.Background(), "token")
+	claims, err := verifier.Verify(context.Background(), unsignedTokenForIssuer(t, accepted.issuer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,14 +159,40 @@ func TestAnyVerifierRejectsEmptyOrUnacceptedSet(t *testing.T) {
 	if _, err := NewAnyVerifier(); err == nil {
 		t.Fatal("expected empty verifier set to fail")
 	}
-	verifier, err := NewAnyVerifier(verifierFunc(func(context.Context, string) (*Claims, error) {
+	verifier, err := NewAnyVerifier(issuerVerifierFunc{issuer: "https://auth.example.com/rejected", verify: func(context.Context, string) (*Claims, error) {
 		return nil, errors.New("rejected")
-	}))
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := verifier.Verify(context.Background(), "token"); err == nil {
+	if _, err := verifier.Verify(context.Background(), unsignedTokenForIssuer(t, "https://auth.example.com/rejected")); err == nil {
 		t.Fatal("expected unaccepted token to fail")
+	}
+}
+
+func TestAnyVerifierFetchesOnlyMatchingIssuerJWKS(t *testing.T) {
+	const audience = "https://mcp.example.com"
+	const scope = "memory:mcp"
+	primary, primaryKey, primaryJWKS, primaryHits := countedJWTVerifier(t, "https://auth.example.com/application/o/chatgpt/", audience, scope, "primary-key")
+	defer primaryJWKS.Close()
+	gemini, geminiKey, geminiJWKS, geminiHits := countedJWTVerifier(t, "https://auth.example.com/application/o/gemini/", audience, scope, "gemini-key")
+	defer geminiJWKS.Close()
+	verifier, err := NewAnyVerifier(primary, gemini)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := verifier.Verify(context.Background(), signedTestTokenWithKID(t, gemini.Issuer(), audience, scope, "gemini-user", "gemini-key", geminiKey)); err != nil {
+		t.Fatal(err)
+	}
+	if primaryHits.Load() != 0 || geminiHits.Load() != 1 {
+		t.Fatalf("jwks requests primary=%d gemini=%d, want 0 and 1", primaryHits.Load(), geminiHits.Load())
+	}
+	if _, err := verifier.Verify(context.Background(), signedTestTokenWithKID(t, "https://auth.example.com/application/o/untrusted/", audience, scope, "untrusted-user", "primary-key", primaryKey)); err == nil {
+		t.Fatal("expected unconfigured issuer to fail")
+	}
+	if primaryHits.Load() != 0 || geminiHits.Load() != 1 {
+		t.Fatalf("unconfigured issuer triggered jwks requests: primary=%d gemini=%d", primaryHits.Load(), geminiHits.Load())
 	}
 }
 
@@ -199,7 +245,7 @@ func testJWTVerifier(t *testing.T, issuer, audience, scope string) (*JWTVerifier
 	if err != nil {
 		t.Fatal(err)
 	}
-	jwks := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	jwks := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"keys": []map[string]string{rsaJWK("test-key", &key.PublicKey)},
 		})
@@ -211,17 +257,52 @@ func testJWTVerifier(t *testing.T, issuer, audience, scope string) (*JWTVerifier
 		jwks.Close()
 		t.Fatal(err)
 	}
+	verifier.client = newNoRedirectHTTPClient(jwks.Client())
 	return verifier, key, jwks
 }
 
+func countedJWTVerifier(t *testing.T, issuer, audience, scope, kid string) (*JWTVerifier, *rsa.PrivateKey, *httptest.Server, *atomic.Int32) {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hits := &atomic.Int32{}
+	jwks := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{rsaJWK(kid, &key.PublicKey)}})
+	}))
+	verifier, err := NewJWTVerifier(JWTVerifierConfig{Issuer: issuer, Audience: audience, JWKSURL: jwks.URL, Scopes: []string{scope}})
+	if err != nil {
+		jwks.Close()
+		t.Fatal(err)
+	}
+	verifier.client = newNoRedirectHTTPClient(jwks.Client())
+	return verifier, key, jwks, hits
+}
+
 func signedTestToken(t *testing.T, issuer, audience, scope, subject string, key *rsa.PrivateKey) string {
+	return signedTestTokenWithKID(t, issuer, audience, scope, subject, "test-key", key)
+}
+
+func signedTestTokenWithKID(t *testing.T, issuer, audience, scope, subject, kid string, key *rsa.PrivateKey) string {
 	t.Helper()
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": issuer, "aud": audience, "sub": subject, "scope": scope,
 		"iat": time.Now().Unix(), "exp": time.Now().Add(time.Hour).Unix(),
 	})
-	token.Header["kid"] = "test-key"
+	token.Header["kid"] = kid
 	signed, err := token.SignedString(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signed
+}
+
+func unsignedTokenForIssuer(t *testing.T, issuer string) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{"iss": issuer})
+	signed, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
 	if err != nil {
 		t.Fatal(err)
 	}
