@@ -186,8 +186,9 @@ func main() {
 		r.Use(middleware.RequestBodyLimit(mcpRequestBodyLimit))
 
 		memoryHTTP := server.NewStreamableHTTPServer(mcpMemory)
-		r.Handle("/memory", memoryHTTP)
-		r.Handle("/memory/", memoryHTTP)
+		memoryEndpoint := mcpEndpointHandler(memoryHTTP)
+		r.Handle("/memory", memoryEndpoint)
+		r.Handle("/memory/", memoryEndpoint)
 		r.Get("/memory/operational", memSrv.OperationalContextHandler())
 	})
 
@@ -314,6 +315,20 @@ func collectionNames(collections []*qdrant.Client) []string {
 
 func memoryAuthRequired(apiKey string, oauthEnabled, allowInsecure bool) bool {
 	return apiKey != "" || oauthEnabled || !allowInsecure
+}
+
+// mcpEndpointHandler answers authenticated HEAD probes without creating an MCP
+// session. Some remote MCP clients use HEAD as a final connectivity check after
+// OAuth and treat a handler-level 404 as a failed connection even when the MCP
+// initialize and tools/list requests succeed.
+func mcpEndpointHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func shutdownHTTPServer(ctx context.Context, srv *http.Server) error {
