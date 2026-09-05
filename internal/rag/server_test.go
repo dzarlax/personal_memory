@@ -2,7 +2,6 @@ package rag
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -23,7 +22,7 @@ func TestParseSearchDocumentsArgs(t *testing.T) {
 	}{
 		{name: "defaults", args: map[string]any{"query": "memory"}},
 		{name: "flat", args: map[string]any{"query": "memory", "limit": float64(100), "mode": "flat"}},
-		{name: "blended", args: map[string]any{"query": "memory", "mode": "blended"}},
+		{name: "blended is evaluator-only", args: map[string]any{"query": "memory", "mode": "blended"}, wantErr: true},
 		{name: "blank query", args: map[string]any{"query": "  "}, wantErr: true},
 		{name: "zero limit", args: map[string]any{"query": "memory", "limit": float64(0)}, wantErr: true},
 		{name: "huge limit", args: map[string]any{"query": "memory", "limit": float64(101)}, wantErr: true},
@@ -70,88 +69,25 @@ func TestRelPathNeverReturnsAbsoluteOrEscapingPaths(t *testing.T) {
 	}
 }
 
-func TestSearchDocumentsBlendedRescuesFlatTopAndReturnsPrivacySafeRouting(t *testing.T) {
-	const documentsRoot = "/documents"
-	var calls []searchCall
-	folders := fakePointSearcher{name: "folders", calls: &calls, search: func(_ map[string]any) []qdrant.Point {
-		return []qdrant.Point{{ID: "folder", Score: .8, Payload: map[string]any{"folder_path": "/documents/project"}}}
-	}}
-	chunks := fakePointSearcher{name: "chunks", calls: &calls, search: func(filter map[string]any) []qdrant.Point {
-		if filter != nil {
-			return []qdrant.Point{
-				{ID: "a", Score: .91, Payload: searchPayload("filtered a", "/documents/project/a.md", "A", "g-a")},
-				{ID: "b", Score: .90, Payload: searchPayload("filtered b", "/documents/project/b.md", "B", "g-b")},
-			}
-		}
-		return []qdrant.Point{
-			{ID: "flat-top", Score: .99, Payload: mergePayload(searchPayload("strong flat", "/private/secret.md", "Secret", "g-private"), map[string]any{"unrestricted": "/do/not/expose"})},
-			{ID: "a", Score: .89, Payload: searchPayload("flat a", "/documents/project/a.md", "A", "g-a")},
-			{ID: "b", Score: .88, Payload: searchPayload("flat b", "/documents/project/b.md", "B", "g-b")},
-		}
-	}}
+func TestSearchDocumentsRejectsOutOfRootCandidate(t *testing.T) {
 	srv := &Server{
-		queryEmbed: fakeQueryEmbedder{}, searchChunks: chunks, searchFolders: folders,
-		validateChunks: sealedSearchValidator(map[string]qdrant.Point{
-			"/documents/project/a.md\x00g-a":  {ID: "a", Payload: searchPayload("filtered a", "/documents/project/a.md", "A", "g-a")},
-			"/documents/project/b.md\x00g-b":  {ID: "b", Payload: searchPayload("filtered b", "/documents/project/b.md", "B", "g-b")},
-			"/private/secret.md\x00g-private": {ID: "flat-top", Payload: searchPayload("strong flat", "/private/secret.md", "Secret", "g-private")},
-		}),
-		cfg: &config.Config{RAGDocumentsDir: documentsRoot, RAGFolderTopK: 3, RAGFolderThreshold: .5},
+		queryEmbed: fakeQueryEmbedder{},
+		searchChunks: fakePointSearcher{search: func(map[string]any) []qdrant.Point {
+			return []qdrant.Point{{ID: "outside", Score: .99, Payload: searchPayload("secret", "/private/secret.md", "Secret", "g")}}
+		}},
+		validateChunks: sealedSearchValidator(map[string]qdrant.Point{"/private/secret.md\x00g": {ID: "outside", Payload: searchPayload("secret", "/private/secret.md", "Secret", "g")}}),
+		cfg:            &config.Config{RAGDocumentsDir: "/documents"},
 	}
-	result, err := srv.handleSearchDocuments(context.Background(), mcp.CallToolRequest{
-		Params: mcp.CallToolParams{Arguments: map[string]any{"query": "needle", "limit": float64(2), "mode": "blended"}},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.IsError {
-		t.Fatalf("tool error: %s", ragToolResultText(t, result))
-	}
-
-	var results []struct {
-		Score    float64 `json:"score"`
-		Text     string  `json:"text"`
-		FilePath string  `json:"file_path"`
-		Routing  struct {
-			Strategy string `json:"strategy"`
-			Sources  []struct {
-				Source string `json:"source"`
-				Rank   int    `json:"rank"`
-			} `json:"sources"`
-			ReasonCodes         []string `json:"reason_codes"`
-			SelectedFolderPaths []string `json:"selected_folder_paths"`
-		} `json:"routing"`
+	result, err := srv.handleSearchDocuments(context.Background(), mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{"query": "needle", "mode": "flat"}}})
+	if err != nil || result.IsError {
+		t.Fatalf("tool result err=%v text=%s", err, ragToolResultText(t, result))
 	}
 	responseText := ragToolResultText(t, result)
-	if err := json.Unmarshal([]byte(responseText), &results); err != nil {
-		t.Fatalf("decode response: %v\n%s", err, responseText)
+	if strings.Contains(responseText, "secret") || strings.Contains(responseText, "/private/") {
+		t.Fatalf("out-of-root payload leaked: %s", responseText)
 	}
-	if len(results) != 2 || results[0].Text != "filtered a" || results[1].Text != "strong flat" {
-		t.Fatalf("unexpected blended results: %#v", results)
-	}
-	if results[1].Score != .99 {
-		t.Fatalf("rescued cosine score = %v, want .99", results[1].Score)
-	}
-	if results[1].FilePath != "" {
-		t.Fatalf("outside file path leaked as %q", results[1].FilePath)
-	}
-	if results[1].Routing.Strategy != "blended_rrf" ||
-		!reflect.DeepEqual(results[1].Routing.ReasonCodes, []string{"flat_match", "flat_rescue"}) ||
-		!reflect.DeepEqual(results[1].Routing.SelectedFolderPaths, []string{"project"}) {
-		t.Fatalf("rescued routing = %#v", results[1].Routing)
-	}
-	if len(results[1].Routing.Sources) != 1 || results[1].Routing.Sources[0].Source != "flat" || results[1].Routing.Sources[0].Rank != 1 {
-		t.Fatalf("rescued source explanation = %#v", results[1].Routing.Sources)
-	}
-	if strings.Contains(responseText, "/private/") || strings.Contains(responseText, "unrestricted") || strings.Contains(responseText, "/do/not/expose") {
-		t.Fatalf("response leaked path or unrestricted payload: %s", responseText)
-	}
-	if want := []searchCall{
-		{Collection: "folders", Limit: 3},
-		{Collection: "chunks", Limit: 4, Filtered: true},
-		{Collection: "chunks", Limit: 4},
-	}; !reflect.DeepEqual(calls, want) {
-		t.Fatalf("bounded search calls = %#v, want %#v", calls, want)
+	if !strings.Contains(responseText, `"out_of_root": 1`) {
+		t.Fatalf("out-of-root rejection was not surfaced: %s", responseText)
 	}
 }
 

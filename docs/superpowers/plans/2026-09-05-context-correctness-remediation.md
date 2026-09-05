@@ -1,5 +1,7 @@
 # Context Correctness Remediation Implementation Plan
 
+> **Status:** Approved and implemented on 2026-09-05. This is now the execution record; its approval language is retained only as historical context.
+
 > **Execution:** Choose inline or delegated execution based on scope and explicit authorization. Minimize Sol usage; assign implementation to Luna/Terra and justify every Sol exception. Steps use checkbox (`- [ ]`) syntax when tracking is useful.
 
 **Goal:** Remove the confirmed paths that return stale, silently overwritten, mixed-generation, or falsely empty context, while preserving the documented lifecycle and availability contracts.
@@ -14,7 +16,7 @@
 
 This plan implements the confirmed defects F01–F14 from `docs/reviews/2026-09-04-personal-memory-correctness-review.md`, in three independently releasable waves. It does not change the documented product tradeoffs R1–R8 (canonical topic scoping, full historical snapshots, default hierarchical routing, semantic contradiction detection, or a relevance-confidence score). Those require product-policy decisions and fresh evaluation evidence.
 
-No deployment, migration of existing production data, commit, push, or production access is authorized by this plan. A production data migration is a later separately approved task after the new reader/writer compatibility contract is implemented and tested.
+The original implementation approval excluded deployment, production-data migration, and production access. A commit and PR were created later under separate explicit user authorization. A production data migration remains a separately approved task after the new reader/writer compatibility contract is implemented and tested.
 
 ## File map
 
@@ -42,7 +44,7 @@ At least 90% of implementation is owned by Terra/Luna. Astra is an exception-onl
 ### Execution waves
 
 1. **Contract freeze — Terra high:** freeze result shapes and compatibility behavior for exact collisions, ambiguous writes, expiry and saturated reads. This unlocks Wave 2.
-2. **Independent fact lanes — Terra/Luna:** implement F01/F02/F06–F13 and strict Qdrant envelopes with disjoint test ownership. Completion requires all targeted race and unit tests.
+2. **Independent fact lanes — Terra/Luna:** implement F01/F02/F06–F10/F12–F13 and strict Qdrant envelopes with disjoint test ownership. F11 belongs solely to Wave 4 because it is a RAG publication/recovery invariant. Completion requires all targeted race and unit tests.
 3. **Astra publication gate:** select and record the RAG active-generation invariant. This is blocked until Wave 2 has established the shared failure/result conventions.
 4. **RAG recovery — Terra high and Luna medium:** implement F03–F05/F11/F14 against the selected invariant; provide status and retry semantics.
 5. **Integration — Terra high:** run broad offline checks, inspect contract/document diffs, and update the approval artifact with actual results. Production or release actions remain out of scope.
@@ -267,3 +269,7 @@ git diff --check
 **Rollback:** ship compatibility readers before writers; guard newly written generation metadata behind a reader that still understands legacy chunks; revert new writes first if integration fails. Do not delete old points, generations, or lifecycle metadata as part of rollback. A later migration must be snapshot-backed and separately approved.
 
 **Approval criteria:** approve only if (1) exact collision and ambiguous-write result schemas are accepted, (2) the RAG invariant selected in Task 4 is acceptable, (3) explicit incomplete responses are acceptable for saturated reads/reindex partial failure, and (4) no deployment or data migration is included.
+
+## Implementation record — 2026-09-05
+
+The approval criteria above were accepted before implementation. The delivered work includes explicit fact outcomes, UTC expiry alignment, strict Qdrant envelopes, dispatched-write cache invalidation, and sealed immutable RAG generations. The PR review follow-up additionally rejects malformed point IDs and out-of-root candidates, restores the public `search_documents` contract to `hierarchical|flat`, rejects documents above the generation-validation cap before embedding or writing, and never rebinds a stale generation's score to newer content. Existing unsealed RAG chunks remain explicitly omitted as `legacy_unverified`; no migration, production reindex, deployment, or legacy backfill was performed.

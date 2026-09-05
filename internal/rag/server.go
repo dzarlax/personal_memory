@@ -120,14 +120,14 @@ func (s *Server) EnsureIndexes(ctx context.Context) error {
 
 func (s *Server) RegisterTools(mcpSrv *server.MCPServer) {
 	mcpSrv.AddTool(mcp.NewTool("search_documents",
-		mcp.WithDescription("Search personal documents using semantic similarity. Hierarchical mode (default) finds relevant folders first and falls back to flat search. Flat mode searches all chunks directly. Blended mode fuses bounded folder-filtered and flat results with privacy-safe routing explanations."),
+		mcp.WithDescription("Search personal documents using semantic similarity. Hierarchical mode (default) finds relevant folders first and falls back to flat search. Flat mode searches all chunks directly."),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 		mcp.WithString("query", mcp.Required(), mcp.Description("Search query")),
 		mcp.WithNumber("limit", mcp.Description("Max results to return (default 5)")),
-		mcp.WithString("mode", mcp.Description("Search mode: 'hierarchical' (default), 'flat', or 'blended'")),
+		mcp.WithString("mode", mcp.Description("Search mode: 'hierarchical' (default) or 'flat'")),
 	), s.handleSearchDocuments)
 
 	mcpSrv.AddTool(mcp.NewTool("reindex_documents",
@@ -152,11 +152,8 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 	}
 
 	var points []qdrant.Point
-	var routing map[string]routingMetadata
 	if mode == "flat" {
 		points, err = s.flatSearch(ctx, vec, limit)
-	} else if mode == "blended" {
-		points, routing, err = s.blendedSearch(ctx, query, vec, limit)
 	} else {
 		points, err = s.hierarchicalSearch(ctx, vec, limit)
 	}
@@ -166,9 +163,6 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 
 	docsDir := s.cfg.RAGDocumentsDir
 	validated, rejected := s.validateSearchCandidates(ctx, points)
-	if mode == "blended" {
-		validated, routing = s.rerankValidated(ctx, query, validated, routing)
-	}
 	validated = validated[:min(len(validated), limit)]
 
 	results := make([]map[string]interface{}, 0, len(validated))
@@ -181,20 +175,19 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 			"heading":     p.Payload["heading"],
 			"chunk_index": p.Payload["chunk_index"],
 		}
-		if metadata, ok := routing[p.ID]; ok {
-			result["routing"] = metadata
-		}
 		results = append(results, result)
 	}
 
 	var response interface{} = results
-	if rejected.incomplete > 0 || rejected.legacyUnverified > 0 {
+	if rejected.incomplete > 0 || rejected.legacyUnverified > 0 || rejected.outOfRoot > 0 || rejected.staleGeneration > 0 {
 		response = map[string]interface{}{
 			"results":    results,
 			"incomplete": true,
 			"rejected_candidates": map[string]int{
 				"incomplete":        rejected.incomplete,
 				"legacy_unverified": rejected.legacyUnverified,
+				"out_of_root":       rejected.outOfRoot,
+				"stale_generation":  rejected.staleGeneration,
 			},
 		}
 	}
@@ -205,6 +198,8 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 type rejectedCandidates struct {
 	incomplete       int
 	legacyUnverified int
+	outOfRoot        int
+	staleGeneration  int
 }
 
 type candidateGeneration struct {
@@ -224,7 +219,7 @@ func (s *Server) validateSearchCandidates(ctx context.Context, candidates []qdra
 	fileOrder := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		filePath, ok := candidate.Payload["file_path"].(string)
-		if !ok || filePath == "" {
+		if !ok || filePath == "" || !s.pathWithinDocumentsRoot(filePath) {
 			continue
 		}
 		if _, exists := discoveredByFile[filePath]; !exists {
@@ -268,6 +263,10 @@ func (s *Server) validateSearchCandidates(ctx context.Context, candidates []qdra
 			rejected.incomplete++
 			continue
 		}
+		if !s.pathWithinDocumentsRoot(filePath) {
+			rejected.outOfRoot++
+			continue
+		}
 		generation, ok := candidate.Payload["generation"].(string)
 		if !ok || generation == "" {
 			rejected.legacyUnverified++
@@ -295,6 +294,10 @@ func (s *Server) validateSearchCandidates(ctx context.Context, candidates []qdra
 				rejected.incomplete++
 				incompleteFiles[filePath] = true
 			}
+			continue
+		}
+		if generation != selected {
+			rejected.staleGeneration++
 			continue
 		}
 		validated, known := discoveredByFile[filePath].generations[selected]
@@ -347,12 +350,16 @@ func parseSearchDocumentsArgs(args map[string]any) (query string, limit int, mod
 	mode = "hierarchical"
 	if raw, exists := args["mode"]; exists {
 		m, ok := raw.(string)
-		if !ok || (m != "hierarchical" && m != "flat" && m != "blended") {
-			return "", 0, "", "mode must be 'hierarchical', 'flat', or 'blended'"
+		if !ok || (m != "hierarchical" && m != "flat") {
+			return "", 0, "", "mode must be 'hierarchical' or 'flat'"
 		}
 		mode = m
 	}
 	return query, limit, mode, ""
+}
+
+func (s *Server) pathWithinDocumentsRoot(path string) bool {
+	return s.cfg == nil || s.cfg.RAGDocumentsDir == "" || pathWithinRoot(s.cfg.RAGDocumentsDir, path)
 }
 
 // relPath returns a path only when it can be represented inside base. It never

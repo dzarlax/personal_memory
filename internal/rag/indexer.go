@@ -226,6 +226,9 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 		slog.Info("removed chunks for empty file", "path", path)
 		return true, nil
 	}
+	if total > maxPublicationValidationPoints {
+		return false, fmt.Errorf("document %s has %d chunks; maximum supported by generation publication is %d", path, total, maxPublicationValidationPoints)
+	}
 
 	// A generation is complete only when all expected indices are present.
 	// Legacy points have no generation payload and must be upgraded even when

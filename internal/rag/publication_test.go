@@ -150,7 +150,7 @@ func TestValidateSearchCandidates_OneSealedGenerationPerFile(t *testing.T) {
 	results, rejected := srv.validateSearchCandidates(context.Background(), []qdrant.Point{
 		candidate(fileA, "a-new", 0, .99), candidate(fileA, "a-old", 0, .98), candidate(fileB, "b", 0, .97),
 	})
-	if rejected != (rejectedCandidates{}) || len(results) != 2 || results[0].Payload["text"] != "a new" || results[1].Payload["text"] != "b" {
+	if rejected.staleGeneration != 1 || len(results) != 2 || results[0].Payload["text"] != "a new" || results[1].Payload["text"] != "b" {
 		t.Fatalf("results=%#v rejected=%#v", results, rejected)
 	}
 }
@@ -168,8 +168,24 @@ func TestValidateSearchCandidates_DiscoversNewerSealedGenerationOutsideSemanticC
 	// The semantic backend returned only the stale, higher-scoring chunk. File
 	// discovery must still select the newer sealed publication.
 	results, rejected := srv.validateSearchCandidates(context.Background(), []qdrant.Point{candidate(file, "old", 0, .99)})
-	if rejected != (rejectedCandidates{}) || len(results) != 1 || results[0].Payload["generation"] != "new" || results[0].Payload["text"] != "new text" {
-		t.Fatalf("results=%#v rejected=%#v", results, rejected)
+	if len(results) != 0 || rejected.staleGeneration != 1 {
+		t.Fatalf("results=%#v rejected=%#v; stale ranking must not be rebound to a fresh generation", results, rejected)
+	}
+}
+
+func TestValidateSearchCandidates_PreservesScoreOnlyForSelectedGeneration(t *testing.T) {
+	file := "/documents/a.md"
+	old := generationPoints(t, file, "old", []string{"old text"}, true)
+	newer := generationPoints(t, file, "new", []string{"new text"}, true)
+	setSealTime(old, "2026-09-05T00:00:00Z")
+	setSealTime(newer, "2026-09-05T00:00:01Z")
+	srv := &Server{validateChunks: controlledGenerationScroller{generations: map[string][]qdrant.ScrollPoint{
+		file + "\x00old": old,
+		file + "\x00new": newer,
+	}}}
+	results, rejected := srv.validateSearchCandidates(context.Background(), []qdrant.Point{candidate(file, "old", 0, .99), candidate(file, "new", 0, .50)})
+	if len(results) != 1 || rejected.staleGeneration != 1 || results[0].Payload["generation"] != "new" || results[0].Score != .50 {
+		t.Fatalf("results=%#v rejected=%#v; fresh generation must retain only its own score", results, rejected)
 	}
 }
 
@@ -184,8 +200,8 @@ func TestValidateSearchCandidates_EqualSealTimeUsesGenerationIDTieBreak(t *testi
 		file + "\x00generation-z": high,
 	}}}
 	results, rejected := srv.validateSearchCandidates(context.Background(), []qdrant.Point{candidate(file, "generation-a", 0, .99)})
-	if rejected != (rejectedCandidates{}) || len(results) != 1 || results[0].Payload["generation"] != "generation-z" {
-		t.Fatalf("results=%#v rejected=%#v", results, rejected)
+	if len(results) != 0 || rejected.staleGeneration != 1 {
+		t.Fatalf("results=%#v rejected=%#v; stale candidate must not borrow the selected generation", results, rejected)
 	}
 }
 

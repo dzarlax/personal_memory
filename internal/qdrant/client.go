@@ -395,6 +395,9 @@ func (c *Client) Search(ctx context.Context, vector []float32, limit int, filter
 
 	points := make([]Point, len(result))
 	for i, r := range result {
+		if id := parsePointID(r.ID); id == "" {
+			return nil, fmt.Errorf("decode search response: point %d has no id", i)
+		}
 		points[i] = Point{
 			ID:      parsePointID(r.ID),
 			Score:   r.Score,
@@ -483,6 +486,9 @@ func (c *Client) ScrollWithPayload(ctx context.Context, limit int, offset interf
 
 	for i := range result.Points {
 		result.Points[i].ID = parsePointID(result.Points[i].RawID)
+		if result.Points[i].ID == "" {
+			return nil, fmt.Errorf("decode scroll response: point %d has no id", i)
+		}
 	}
 
 	return &result, nil

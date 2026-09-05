@@ -168,7 +168,7 @@ func TestRun_CleanupFailureKeepsNewestSealedGenerationSelected(t *testing.T) {
 		candidate(path, oldGeneration, 0, .99),
 		candidate(path, newGeneration, 0, .90),
 	})
-	if rejected != (rejectedCandidates{}) || len(results) != 1 || results[0].Payload["generation"] != newGeneration {
+	if rejected.staleGeneration != 1 || len(results) != 1 || results[0].Payload["generation"] != newGeneration || results[0].Score != .90 {
 		t.Fatalf("results=%#v rejected=%#v; stale generation must not win by score", results, rejected)
 	}
 }
@@ -283,6 +283,23 @@ func TestIndexFile_InvalidChunkLimitPreservesCompleteGeneration(t *testing.T) {
 				t.Fatalf("invalid chunk limit mutated dependencies: deletes=%d embeds=%d upserts=%d", h.deletes, h.embeds, h.upserts)
 			}
 		})
+	}
+}
+
+func TestIndexFile_PublicationChunkCapRejectsBeforeEmbeddingOrWriting(t *testing.T) {
+	h := newGenerationHarness(t, 1)
+	path := writeRAGFile(t, h.idx.docsDir, strings.Repeat("x", maxPublicationValidationPoints+1))
+	oldID := h.seed(path, "old-generation", 1)
+
+	changed, err := h.idx.indexFile(context.Background(), path, h.state(t, path))
+	if err == nil || changed || !strings.Contains(err.Error(), "maximum supported") {
+		t.Fatalf("indexFile = changed %v, err %v; want pre-write publication-cap error", changed, err)
+	}
+	if _, ok := h.points[oldID]; !ok {
+		t.Fatal("publication-cap rejection removed the prior generation")
+	}
+	if h.embeds != 0 || h.upserts != 0 || h.deletes != 0 {
+		t.Fatalf("publication-cap rejection mutated dependencies: embeds=%d upserts=%d deletes=%d", h.embeds, h.upserts, h.deletes)
 	}
 }
 

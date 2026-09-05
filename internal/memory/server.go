@@ -109,7 +109,7 @@ func (s *Server) Start(ctx context.Context) {
 	s.recallCounterMu.Lock()
 	defer s.recallCounterMu.Unlock()
 	if s.recallCounter == nil {
-		s.recallCounter = newRecallCounter(ctx, s.qdrant, defaultRecallQueueSize, defaultRecallFlushInterval)
+		s.recallCounter = newRecallCounter(ctx, s.qdrant, s.cache.Invalidate, defaultRecallQueueSize, defaultRecallFlushInterval)
 	}
 }
 

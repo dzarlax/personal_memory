@@ -96,7 +96,7 @@ func TestRecallCounterDropsAmbiguousWriteFailureWithoutRetryingDelta(t *testing.
 		http.Error(w, "response lost after apply", http.StatusServiceUnavailable)
 	}))
 	defer qs.Close()
-	counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), 2, 5*time.Millisecond)
+	counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), nil, 2, 5*time.Millisecond)
 	if err := counter.enqueue(context.Background(), "fact-id"); err != nil {
 		t.Fatal(err)
 	}
@@ -122,6 +122,44 @@ func TestRecallCounterDropsAmbiguousWriteFailureWithoutRetryingDelta(t *testing.
 	defer mu.Unlock()
 	if posts != 1 {
 		t.Fatalf("ambiguous delta was retried: attempts=%d", posts)
+	}
+}
+
+func TestRecallCounterInvalidatesCacheAfterCompletedOrAmbiguousWrite(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		response string
+		status   int
+	}{
+		{name: "completed", response: `{"status":"ok","result":{"status":"completed"}}`, status: http.StatusOK},
+		{name: "ambiguous", response: "response lost", status: http.StatusServiceUnavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			invalidated := make(chan struct{}, 1)
+			qs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet {
+					_, _ = w.Write([]byte(`{"result":{"id":"fact-id","payload":{"recall_count":7}}}`))
+					return
+				}
+				w.WriteHeader(test.status)
+				_, _ = w.Write([]byte(test.response))
+			}))
+			defer qs.Close()
+			counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), func() { invalidated <- struct{}{} }, 1, time.Millisecond)
+			if err := counter.enqueue(context.Background(), "fact-id"); err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case <-invalidated:
+			case <-time.After(time.Second):
+				t.Fatal("counter write did not invalidate cache")
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			if err := counter.stop(ctx); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -279,7 +317,7 @@ func TestRecallCounterAppliesBackpressureInsteadOfDropping(t *testing.T) {
 		_, _ = w.Write([]byte(`{"status":"ok","result":{"status":"completed"}}`))
 	}))
 	defer qs.Close()
-	counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), 1, time.Millisecond)
+	counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), nil, 1, time.Millisecond)
 	if err := counter.enqueue(context.Background(), "first"); err != nil {
 		t.Fatal(err)
 	}

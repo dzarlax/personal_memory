@@ -101,6 +101,28 @@ func TestScrollRequiresExplicitPointsArray(t *testing.T) {
 	}
 }
 
+func TestReadOperationsRejectPointsWithoutIDs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/points/search"):
+			_, _ = w.Write([]byte(`{"result":[{"score":0.9,"payload":{}}]}`))
+		case strings.HasSuffix(r.URL.Path, "/points/scroll"):
+			_, _ = w.Write([]byte(`{"result":{"points":[{"payload":{}}],"next_page_offset":null}}`))
+		default:
+			http.Error(w, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "memory")
+	if _, err := client.Search(context.Background(), []float32{1}, 1, nil, nil); err == nil || !strings.Contains(err.Error(), "has no id") {
+		t.Fatalf("Search error = %v, want missing ID error", err)
+	}
+	if _, err := client.Scroll(context.Background(), 1, nil, nil, false); err == nil || !strings.Contains(err.Error(), "has no id") {
+		t.Fatalf("Scroll error = %v, want missing ID error", err)
+	}
+}
+
 func TestCollectionName(t *testing.T) {
 	if got := NewClient("http://example.test", "doc_chunks").CollectionName(); got != "doc_chunks" {
 		t.Fatalf("CollectionName() = %q, want doc_chunks", got)
