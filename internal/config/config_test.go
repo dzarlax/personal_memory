@@ -184,7 +184,14 @@ func TestLoadRelatedFactLowSelectionAndWarnings(t *testing.T) {
 
 			var logs bytes.Buffer
 			previousLogger := slog.Default()
-			slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+			slog.SetDefault(slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{
+				ReplaceAttr: func(_ []string, attr slog.Attr) slog.Attr {
+					if attr.Key == slog.TimeKey {
+						return slog.Attr{}
+					}
+					return attr
+				},
+			})))
 			defer slog.SetDefault(previousLogger)
 
 			cfg, err := Load()
