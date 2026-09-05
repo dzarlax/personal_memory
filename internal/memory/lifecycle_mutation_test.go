@@ -475,7 +475,8 @@ func TestImportFactsBatchesEmbeddings(t *testing.T) {
 	if embedRequests != 1 || !reflect.DeepEqual(embeddedInputs, []string{"first", "second"}) {
 		t.Fatalf("embed requests=%d inputs=%#v", embedRequests, embeddedInputs)
 	}
-	if upserts != 2 || !strings.Contains(toolResultText(t, result), "Imported 2 facts, skipped 0") {
+	structured, ok := result.StructuredContent.(ImportFactsResult)
+	if upserts != 2 || !ok || structured.Imported != 2 || len(structured.Outcomes) != 2 || structured.Outcomes[0].Status != "stored" || structured.Outcomes[1].Status != "stored" {
 		t.Fatalf("upserts=%d result=%#v", upserts, result)
 	}
 }
@@ -526,7 +527,8 @@ func TestImportFactsFallsBackToPerItemEmbedding(t *testing.T) {
 	if err != nil || result.IsError {
 		t.Fatalf("import result=%#v err=%v", result, err)
 	}
-	if upserts != 1 || !strings.Contains(toolResultText(t, result), "Imported 1 facts, skipped 1") {
+	structured, ok := result.StructuredContent.(ImportFactsResult)
+	if upserts != 1 || !ok || structured.Imported != 1 || len(structured.Outcomes) != 2 || structured.Outcomes[0].Status != "stored" || structured.Outcomes[1].Status != "embedding_failed" {
 		t.Fatalf("upserts=%d result=%#v", upserts, result)
 	}
 }

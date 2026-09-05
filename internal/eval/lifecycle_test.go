@@ -193,6 +193,19 @@ func TestInvalidAsOfKeepsCurrentReferenceTime(t *testing.T) {
 	}
 }
 
+func TestFactExpiryUsesUTCCalendarDateBoundary(t *testing.T) {
+	payload := map[string]any{"valid_until": "2026-08-01"}
+	if factExpiredAt(payload, time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)) {
+		t.Fatal("fact expired at noon on valid_until date")
+	}
+	if !factExpiredAt(payload, time.Date(2026, time.August, 2, 0, 0, 0, 0, time.UTC)) {
+		t.Fatal("fact remained current after valid_until date")
+	}
+	if !factExpiredAt(map[string]any{"valid_until": "tomorrow"}, time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)) {
+		t.Fatal("malformed explicit expiry was treated as current")
+	}
+}
+
 func TestLifecycleExpectationReasonCodesArePresenceSensitive(t *testing.T) {
 	candidate := LifecycleCandidateReport{
 		ID: "42", State: lifecycle.Current, Decision: PresentationInclude,

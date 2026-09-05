@@ -53,6 +53,76 @@ func TestNewClientHasBoundedHTTPTimeout(t *testing.T) {
 	}
 }
 
+func TestReadOperationsRejectSuccessfulEnvelopeWithoutUsableResult(t *testing.T) {
+	for _, body := range []string{`{}`, `{"status":"error"}`, `{"result":null}`} {
+		t.Run(body, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+			client := NewClient(server.URL, "memory")
+			if _, err := client.Search(context.Background(), []float32{1}, 1, nil, nil); err == nil {
+				t.Fatal("Search accepted unusable result envelope")
+			}
+			if _, err := client.Scroll(context.Background(), 1, nil, nil, false); err == nil {
+				t.Fatal("Scroll accepted unusable result envelope")
+			}
+			if _, _, err := client.Get(context.Background(), "1"); err == nil {
+				t.Fatal("Get accepted unusable result envelope")
+			}
+		})
+	}
+}
+
+func TestScrollRequiresExplicitPointsArray(t *testing.T) {
+	tests := []struct {
+		name      string
+		response  string
+		wantError bool
+	}{
+		{name: "missing points", response: `{"result":{}}`, wantError: true},
+		{name: "offset without points", response: `{"result":{"next_page_offset":null}}`, wantError: true},
+		{name: "explicit empty page", response: `{"result":{"points":[],"next_page_offset":null}}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(tt.response))
+			}))
+			defer server.Close()
+			result, err := NewClient(server.URL, "memory").Scroll(context.Background(), 1, nil, nil, false)
+			if (err != nil) != tt.wantError {
+				t.Fatalf("Scroll error = %v, wantError %v", err, tt.wantError)
+			}
+			if err == nil && (result == nil || len(result.Points) != 0 || result.RawOffset != nil) {
+				t.Fatalf("Scroll result = %#v", result)
+			}
+		})
+	}
+}
+
+func TestReadOperationsRejectPointsWithoutIDs(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/points/search"):
+			_, _ = w.Write([]byte(`{"result":[{"score":0.9,"payload":{}}]}`))
+		case strings.HasSuffix(r.URL.Path, "/points/scroll"):
+			_, _ = w.Write([]byte(`{"result":{"points":[{"payload":{}}],"next_page_offset":null}}`))
+		default:
+			http.Error(w, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "memory")
+	if _, err := client.Search(context.Background(), []float32{1}, 1, nil, nil); err == nil || !strings.Contains(err.Error(), "has no id") {
+		t.Fatalf("Search error = %v, want missing ID error", err)
+	}
+	if _, err := client.Scroll(context.Background(), 1, nil, nil, false); err == nil || !strings.Contains(err.Error(), "has no id") {
+		t.Fatalf("Scroll error = %v, want missing ID error", err)
+	}
+}
+
 func TestCollectionName(t *testing.T) {
 	if got := NewClient("http://example.test", "doc_chunks").CollectionName(); got != "doc_chunks" {
 		t.Fatalf("CollectionName() = %q, want doc_chunks", got)

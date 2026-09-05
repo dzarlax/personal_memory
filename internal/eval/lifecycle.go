@@ -240,7 +240,7 @@ func presentFactCandidates(query Query, points []qdrant.Point, now time.Time) pr
 func presentFactCandidatesWithOrder(query Query, points []qdrant.Point, now time.Time, preserveSemanticOrder bool) presentedFacts {
 	reference := now.UTC()
 	if query.EffectiveIntent() == QueryIntentAsOf {
-		if parsed, err := time.Parse("2006-01-02", query.AsOf); err == nil {
+		if parsed, err := parseUTCCalendarDate(query.AsOf); err == nil {
 			reference = parsed
 		}
 	}

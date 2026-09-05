@@ -14,7 +14,7 @@ export default defineConfig({
     starlight({
       title: 'Personal Memory',
       sidebar: [
-        { label: 'Start here', items: [{ slug: 'index' }, { slug: 'getting-started/installation' }, { slug: 'getting-started/connect-clients' }, { slug: 'architecture-security' }, { slug: 'limitations' }] },
+        { label: 'Start here', items: [{ slug: 'index' }, { slug: 'whats-new' }, { slug: 'getting-started/installation' }, { slug: 'getting-started/connect-clients' }, { slug: 'architecture-security' }, { slug: 'limitations' }] },
         { label: 'Operations', items: [{ slug: 'operations/upgrade-rollback' }, { slug: 'operations/backups-release' }, { slug: 'operations/release-report-v0-1-0' }, { slug: 'operations/troubleshooting' }, { slug: 'operations/evaluation' }, { slug: 'operations/conformance' }] },
         { label: 'Lifecycle and maintenance', items: [{ slug: 'lifecycle/fact-lifecycle-contract' }, { slug: 'lifecycle/migration' }, { slug: 'maintenance' }] },
         { label: 'Reference', items: [{ slug: 'reference/tools' }, { slug: 'reference/configuration' }, { slug: 'reference/compatibility' }, { slug: 'reference/model-memory-usage-contract' }] },

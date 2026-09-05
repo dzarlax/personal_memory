@@ -18,15 +18,17 @@ import (
 )
 
 type generationHarness struct {
-	server       *httptest.Server
-	idx          *Indexer
-	points       map[string]qdrant.Point
-	failEmbed    bool
-	failUpsertAt int
-	failDelete   bool
-	upserts      int
-	deletes      int
-	embeds       int
+	server         *httptest.Server
+	idx            *Indexer
+	points         map[string]qdrant.Point
+	failEmbed      bool
+	failUpsertAt   int
+	failSeal       bool
+	failDelete     bool
+	deleteFailures chan bool
+	upserts        int
+	deletes        int
+	embeds         int
 }
 
 func newGenerationHarness(t *testing.T, maxBytes int) *generationHarness {
@@ -63,6 +65,10 @@ func (h *generationHarness) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(vectors)
 
 	case strings.HasSuffix(r.URL.Path, "/points/scroll"):
+		var request struct {
+			Filter map[string]interface{} `json:"filter"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&request)
 		ids := make([]string, 0, len(h.points))
 		for id := range h.points {
 			ids = append(ids, id)
@@ -70,6 +76,9 @@ func (h *generationHarness) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		sort.Strings(ids)
 		points := make([]map[string]interface{}, 0, len(ids))
 		for _, id := range ids {
+			if !matchesFilter(h.points[id].Payload, request.Filter) {
+				continue
+			}
 			points = append(points, map[string]interface{}{
 				"id":      id,
 				"payload": h.points[id].Payload,
@@ -81,14 +90,18 @@ func (h *generationHarness) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	case strings.HasSuffix(r.URL.Path, "/points") && r.Method == http.MethodPut:
 		h.upserts++
-		if h.failUpsertAt > 0 && h.upserts == h.failUpsertAt {
-			http.Error(w, "injected upsert failure", http.StatusInternalServerError)
-			return
-		}
 		var request struct {
 			Points []qdrant.Point `json:"points"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&request)
+		if h.failUpsertAt > 0 && h.upserts == h.failUpsertAt {
+			http.Error(w, "injected upsert failure", http.StatusInternalServerError)
+			return
+		}
+		if h.failSeal && len(request.Points) == 1 && request.Points[0].Payload["publication"] != nil {
+			http.Error(w, "injected seal response loss", http.StatusInternalServerError)
+			return
+		}
 		for _, p := range request.Points {
 			h.points[p.ID] = p
 		}
@@ -96,6 +109,10 @@ func (h *generationHarness) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	case strings.HasSuffix(r.URL.Path, "/points/delete"):
 		h.deletes++
+		if h.deleteFailures != nil && <-h.deleteFailures {
+			http.Error(w, "channel-controlled delete failure", http.StatusInternalServerError)
+			return
+		}
 		if h.failDelete {
 			http.Error(w, "injected delete failure", http.StatusInternalServerError)
 			return
@@ -111,6 +128,48 @@ func (h *generationHarness) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		http.Error(w, "unexpected request: "+r.Method+" "+r.URL.Path, http.StatusNotFound)
+	}
+}
+
+func TestRun_CleanupFailureKeepsNewestSealedGenerationSelected(t *testing.T) {
+	h := newGenerationHarness(t, 100)
+	path := writeRAGFile(t, h.idx.docsDir, "replacement")
+	oldGeneration := "old-generation"
+	h.seed(path, oldGeneration, 1)
+	// The one buffered failure is consumed exactly by replacement cleanup,
+	// making this regression deterministic without timing or retries.
+	h.deleteFailures = make(chan bool, 1)
+	h.deleteFailures <- true
+
+	err := h.idx.Run(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "remove prior generations") {
+		t.Fatalf("Run error = %v, want replacement cleanup failure", err)
+	}
+
+	generations := make(map[string][]qdrant.ScrollPoint)
+	var newGeneration string
+	for _, point := range h.points {
+		generation, _ := point.Payload["generation"].(string)
+		if generation == "" {
+			continue
+		}
+		filePath, _ := point.Payload["file_path"].(string)
+		key := filePath + "\x00" + generation
+		generations[key] = append(generations[key], qdrant.ScrollPoint{ID: point.ID, Payload: point.Payload})
+		if generation != oldGeneration {
+			newGeneration = generation
+		}
+	}
+	if newGeneration == "" {
+		t.Fatal("replacement generation was not sealed before cleanup failure")
+	}
+	srv := &Server{validateChunks: controlledGenerationScroller{generations: generations}}
+	results, rejected := srv.validateSearchCandidates(context.Background(), []qdrant.Point{
+		candidate(path, oldGeneration, 0, .99),
+		candidate(path, newGeneration, 0, .90),
+	})
+	if rejected.staleGeneration != 1 || len(results) != 1 || results[0].Payload["generation"] != newGeneration || results[0].Score != .90 {
+		t.Fatalf("results=%#v rejected=%#v; stale generation must not win by score", results, rejected)
 	}
 }
 
@@ -137,12 +196,42 @@ func (h *generationHarness) seed(path, generation string, total int) string {
 		"chunk_index":  0,
 		"total_chunks": total,
 		"file_hash":    generation,
+		"layout":       chunkLayout(h.idx.maxBytes),
 	}
 	if generation != "" {
 		payload["generation"] = generation
+		digest, err := generationDigest(path, generation, chunkLayout(h.idx.maxBytes), generation, []qdrant.ScrollPoint{{ID: id, Payload: payload}})
+		if err != nil {
+			panic(err)
+		}
+		payload["publication"] = publicationDescriptor{Version: publicationVersion, FilePath: path, Generation: generation, Layout: chunkLayout(h.idx.maxBytes), FileHash: generation, SealedAt: "2020-01-01T00:00:00Z", TotalChunks: total, OrderedDigest: digest}
 	}
 	h.points[id] = qdrant.Point{ID: id, Vector: []float32{1, 1}, Payload: payload}
 	return id
+}
+
+func matchesFilter(payload map[string]interface{}, filter map[string]interface{}) bool {
+	if filter == nil {
+		return true
+	}
+	must, _ := filter["must"].([]interface{})
+	if must == nil {
+		if typed, ok := filter["must"].([]map[string]interface{}); ok {
+			must = make([]interface{}, len(typed))
+			for i := range typed {
+				must[i] = typed[i]
+			}
+		}
+	}
+	for _, raw := range must {
+		condition, _ := raw.(map[string]interface{})
+		key, _ := condition["key"].(string)
+		match, _ := condition["match"].(map[string]interface{})
+		if payload[key] != match["value"] {
+			return false
+		}
+	}
+	return true
 }
 
 func writeRAGFile(t *testing.T, dir, content string) string {
@@ -197,6 +286,23 @@ func TestIndexFile_InvalidChunkLimitPreservesCompleteGeneration(t *testing.T) {
 	}
 }
 
+func TestIndexFile_PublicationChunkCapRejectsBeforeEmbeddingOrWriting(t *testing.T) {
+	h := newGenerationHarness(t, 1)
+	path := writeRAGFile(t, h.idx.docsDir, strings.Repeat("x", maxPublicationValidationPoints+1))
+	oldID := h.seed(path, "old-generation", 1)
+
+	changed, err := h.idx.indexFile(context.Background(), path, h.state(t, path))
+	if err == nil || changed || !strings.Contains(err.Error(), "maximum supported") {
+		t.Fatalf("indexFile = changed %v, err %v; want pre-write publication-cap error", changed, err)
+	}
+	if _, ok := h.points[oldID]; !ok {
+		t.Fatal("publication-cap rejection removed the prior generation")
+	}
+	if h.embeds != 0 || h.upserts != 0 || h.deletes != 0 {
+		t.Fatalf("publication-cap rejection mutated dependencies: embeds=%d upserts=%d deletes=%d", h.embeds, h.upserts, h.deletes)
+	}
+}
+
 func TestIndexFile_MidUpsertFailureResumesThenSwitchesGeneration(t *testing.T) {
 	h := newGenerationHarness(t, 6)
 	content := "aaaa. bbbb."
@@ -223,9 +329,8 @@ func TestIndexFile_MidUpsertFailureResumesThenSwitchesGeneration(t *testing.T) {
 	if _, ok := h.points[oldID]; ok {
 		t.Fatal("old generation remains after the replacement became complete")
 	}
-	generation := contentGeneration(content)
 	state := h.state(t, path)
-	if !state.complete(generation, 2) || len(h.points) != 2 {
+	if _, ok := state.complete(contentGeneration(content), chunkLayout(h.idx.maxBytes), 2); !ok || len(h.points) != 2 {
 		t.Fatalf("replacement generation is not complete: %#v", state)
 	}
 }
@@ -243,8 +348,27 @@ func TestIndexFile_SuccessfulSwitchDeletesOnlyPriorGeneration(t *testing.T) {
 	if _, ok := h.points[oldID]; ok {
 		t.Fatal("prior generation was not deleted")
 	}
-	if !h.state(t, path).complete(contentGeneration(content), 1) {
+	if _, ok := h.state(t, path).complete(contentGeneration(content), chunkLayout(h.idx.maxBytes), 1); !ok {
 		t.Fatal("new generation is not complete")
+	}
+}
+
+func TestIndexFile_SealFailureNeverCleansUpPriorGeneration(t *testing.T) {
+	h := newGenerationHarness(t, 100)
+	content := "replacement"
+	path := writeRAGFile(t, h.idx.docsDir, content)
+	oldID := h.seed(path, "old-generation", 1)
+	h.failSeal = true
+
+	changed, err := h.idx.indexFile(context.Background(), path, h.state(t, path))
+	if err == nil || !changed {
+		t.Fatalf("indexFile = changed %v, err %v; want ambiguous seal failure", changed, err)
+	}
+	if _, ok := h.points[oldID]; !ok {
+		t.Fatal("prior generation was deleted after ambiguous seal failure")
+	}
+	if len(h.points) != 2 { // old sealed + new unsealed
+		t.Fatalf("points after seal failure = %d, want 2", len(h.points))
 	}
 }
 
@@ -334,7 +458,7 @@ func TestIndexFile_LegacyUnversionedChunksAreUpgraded(t *testing.T) {
 	if _, ok := h.points[legacyID]; ok {
 		t.Fatal("legacy point remains after successful versioned replacement")
 	}
-	if !h.state(t, path).complete(contentGeneration(content), 1) {
+	if _, ok := h.state(t, path).complete(contentGeneration(content), chunkLayout(h.idx.maxBytes), 1); !ok {
 		t.Fatal("versioned replacement is not complete")
 	}
 }

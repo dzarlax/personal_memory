@@ -20,11 +20,12 @@ const (
 // not expose an atomic payload increment, so a single worker prevents recalls
 // handled by this process from overwriting each other's counters.
 type recallCounter struct {
-	qdrant *qdrant.Client
-	queue  chan []string
-	done   chan struct{}
-	cancel context.CancelFunc
-	stopCh chan struct{}
+	qdrant     *qdrant.Client
+	invalidate func()
+	queue      chan []string
+	done       chan struct{}
+	cancel     context.CancelFunc
+	stopCh     chan struct{}
 
 	mu        sync.Mutex
 	enqueueWG sync.WaitGroup
@@ -32,15 +33,16 @@ type recallCounter struct {
 	stopOnce  sync.Once
 }
 
-func newRecallCounter(parent context.Context, qc *qdrant.Client, queueSize int, flushInterval time.Duration) *recallCounter {
+func newRecallCounter(parent context.Context, qc *qdrant.Client, invalidate func(), queueSize int, flushInterval time.Duration) *recallCounter {
 	ctx, cancel := context.WithCancel(parent)
 	c := &recallCounter{
-		qdrant:    qc,
-		queue:     make(chan []string, queueSize),
-		done:      make(chan struct{}),
-		stopCh:    make(chan struct{}),
-		cancel:    cancel,
-		accepting: true,
+		qdrant:     qc,
+		invalidate: invalidate,
+		queue:      make(chan []string, queueSize),
+		done:       make(chan struct{}),
+		stopCh:     make(chan struct{}),
+		cancel:     cancel,
+		accepting:  true,
 	}
 	go c.run(ctx, flushInterval)
 	return c
@@ -153,10 +155,23 @@ func (c *recallCounter) flush(ctx context.Context, pending map[string]int) {
 			"recall_count":     count + delta,
 			"last_recalled_at": nowISO(),
 		}); err != nil {
-			slog.Error("recall counter: update failed", "point_id", id, "delta", delta, "error", err)
+			// SetPayload is a read-modify-write operation. Once its request has
+			// been dispatched, an error cannot tell us whether Qdrant applied the
+			// increment before the response was lost. Retrying this delta could
+			// double count, so deliberately drop it and keep the log content-free.
+			slog.Error("recall counter: update outcome ambiguous; dropped increment")
+			c.invalidateCache()
+			delete(pending, id)
 			continue
 		}
+		c.invalidateCache()
 		delete(pending, id)
+	}
+}
+
+func (c *recallCounter) invalidateCache() {
+	if c.invalidate != nil {
+		c.invalidate()
 	}
 }
 

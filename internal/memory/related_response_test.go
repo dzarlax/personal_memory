@@ -266,25 +266,25 @@ func TestImportFactsUsesLifecycleAwareDuplicateSelection(t *testing.T) {
 	tests := []struct {
 		name           string
 		searchResponse string
-		wantText       string
+		wantStatus     string
 		wantWrites     int
 	}{
 		{
 			name:           "valid superseded candidate does not block",
 			searchResponse: `{"result":[{"id":"old","score":0.99,"payload":{"text":"old version","namespace":"projects","lifecycle_state":"superseded","superseded_by":["replacement"]}}]}`,
-			wantText:       "Imported 1 facts, skipped 0.",
+			wantStatus:     "stored",
 			wantWrites:     1,
 		},
 		{
 			name:           "current candidate still blocks",
 			searchResponse: `{"result":[{"id":"current","score":0.99,"payload":{"text":"same fact","namespace":"projects","lifecycle_state":"current"}}]}`,
-			wantText:       "Imported 0 facts, skipped 1.",
+			wantStatus:     "duplicate",
 			wantWrites:     0,
 		},
 		{
 			name:           "invalid superseded candidate still blocks",
 			searchResponse: `{"result":[{"id":"invalid","score":0.99,"payload":{"text":"broken old version","namespace":"projects","lifecycle_state":"superseded"}}]}`,
-			wantText:       "Imported 0 facts, skipped 1.",
+			wantStatus:     "duplicate",
 			wantWrites:     0,
 		},
 	}
@@ -298,8 +298,9 @@ func TestImportFactsUsesLifecycleAwareDuplicateSelection(t *testing.T) {
 			if err != nil || result.IsError {
 				t.Fatalf("import failed: result=%#v err=%v", result, err)
 			}
-			if text := toolResultText(t, result); text != tt.wantText {
-				t.Fatalf("import result = %q, want %q", text, tt.wantText)
+			structured, ok := result.StructuredContent.(ImportFactsResult)
+			if !ok || len(structured.Outcomes) != 1 || structured.Outcomes[0].Status != tt.wantStatus {
+				t.Fatalf("import result = %#v, want status %q", result, tt.wantStatus)
 			}
 			if *searches != 1 || *writes != tt.wantWrites {
 				t.Fatalf("searches=%d writes=%d, want searches=1 writes=%d", *searches, *writes, tt.wantWrites)
@@ -326,8 +327,9 @@ func TestImportFactsRefusesInconclusiveDedupWindow(t *testing.T) {
 	if err != nil || result.IsError {
 		t.Fatalf("import failed: result=%#v err=%v", result, err)
 	}
-	if text := toolResultText(t, result); text != "Imported 0 facts, skipped 1." {
-		t.Fatalf("import result = %q", text)
+	structured, ok := result.StructuredContent.(ImportFactsResult)
+	if !ok || structured.Imported != 0 || len(structured.Outcomes) != 1 || structured.Outcomes[0].Status != "inconclusive" {
+		t.Fatalf("import result = %#v", result)
 	}
 	if *searches != 1 || *writes != 0 {
 		t.Fatalf("searches=%d writes=%d, want searches=1 writes=0", *searches, *writes)
@@ -589,4 +591,45 @@ func TestStoreFactSearchErrorsPreserveFailOpenAndKnownDuplicate(t *testing.T) {
 			t.Fatalf("result=%#v writes=%d", structured, *writes)
 		}
 	})
+}
+
+func TestStoreFactRefusesActiveExactIDBeforeUnavailablePreflight(t *testing.T) {
+	fact := "existing canonical fact"
+	pointID := PointID("projects", fact)
+	embedServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[[0.1,0.2]]`))
+	}))
+	defer embedServer.Close()
+
+	searches := 0
+	writes := 0
+	qdrantServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/points/"+pointID):
+			_, _ = w.Write([]byte(`{"result":{"id":"` + pointID + `","payload":{"text":"existing canonical fact","namespace":"projects","lifecycle_state":"current","canonical":true}}}`))
+		case strings.HasSuffix(r.URL.Path, "/points/search"):
+			searches++
+			http.Error(w, "unavailable", http.StatusBadGateway)
+		default:
+			writes++
+			_, _ = w.Write([]byte(`{"result":{"status":"completed"}}`))
+		}
+	}))
+	defer qdrantServer.Close()
+
+	srv := NewServer(qdrant.NewClient(qdrantServer.URL, "memory"), embeddings.NewClient(embedServer.URL), NewCache(time.Minute), "test", .97, .60, .90)
+	result, err := srv.storeFact(context.Background(), toolRequest(map[string]interface{}{"fact": fact, "namespace": "projects"}))
+	if err != nil || !result.IsError {
+		t.Fatalf("result=%#v err=%v, want exact-ID rejection", result, err)
+	}
+	structured, ok := result.StructuredContent.(StoreFactResult)
+	if !ok || structured.Status != "collision" || structured.Stored || structured.PointID != pointID {
+		t.Fatalf("structured collision = %#v", result.StructuredContent)
+	}
+	if text := toolResultText(t, result); !strings.Contains(text, "already exists") {
+		t.Fatalf("result text=%q, want exact-ID explanation", text)
+	}
+	if searches != 0 || writes != 0 {
+		t.Fatalf("searches=%d writes=%d, want 0/0", searches, writes)
+	}
 }

@@ -48,19 +48,20 @@ type queryEmbedder interface {
 
 // Server exposes RAG as MCP tools registered on the shared memory MCP server.
 type Server struct {
-	chunks        *qdrant.Client
-	folders       *qdrant.Client
-	embed         *embeddings.Client
-	searchChunks  pointSearcher
-	searchFolders pointSearcher
-	queryEmbed    queryEmbedder
-	reranker      rerank.Reranker
-	rerankerCap   int
-	cfg           *config.Config
-	indexer       *Indexer
-	lifeCtx       context.Context // cancelled on graceful shutdown
-	reindexMu     sync.Mutex      // held while a background reindex is running
-	workWG        sync.WaitGroup  // all background loops and on-demand reindexes
+	chunks         *qdrant.Client
+	folders        *qdrant.Client
+	embed          *embeddings.Client
+	searchChunks   pointSearcher
+	searchFolders  pointSearcher
+	validateChunks generationScroller
+	queryEmbed     queryEmbedder
+	reranker       rerank.Reranker
+	rerankerCap    int
+	cfg            *config.Config
+	indexer        *Indexer
+	lifeCtx        context.Context // cancelled on graceful shutdown
+	reindexMu      sync.Mutex      // held while a background reindex is running
+	workWG         sync.WaitGroup  // all background loops and on-demand reindexes
 }
 
 // SetBlendedReranker injects an optional reranker for blended searches. It is
@@ -83,15 +84,16 @@ func (s *Server) SetBlendedReranker(service rerank.Reranker, candidateCap int) e
 func NewServer(lifeCtx context.Context, chunks, folders *qdrant.Client, embed *embeddings.Client, cfg *config.Config) *Server {
 	idx := NewIndexer(chunks, folders, embed, cfg.RAGDocumentsDir, cfg.RAGChunkMaxBytes)
 	return &Server{
-		chunks:        chunks,
-		folders:       folders,
-		embed:         embed,
-		searchChunks:  chunks,
-		searchFolders: folders,
-		queryEmbed:    embed,
-		cfg:           cfg,
-		indexer:       idx,
-		lifeCtx:       lifeCtx,
+		chunks:         chunks,
+		folders:        folders,
+		embed:          embed,
+		searchChunks:   chunks,
+		searchFolders:  folders,
+		validateChunks: chunks,
+		queryEmbed:     embed,
+		cfg:            cfg,
+		indexer:        idx,
+		lifeCtx:        lifeCtx,
 	}
 }
 
@@ -118,14 +120,14 @@ func (s *Server) EnsureIndexes(ctx context.Context) error {
 
 func (s *Server) RegisterTools(mcpSrv *server.MCPServer) {
 	mcpSrv.AddTool(mcp.NewTool("search_documents",
-		mcp.WithDescription("Search personal documents using semantic similarity. Hierarchical mode (default) finds relevant folders first and falls back to flat search. Flat mode searches all chunks directly. Blended mode fuses bounded folder-filtered and flat results with privacy-safe routing explanations."),
+		mcp.WithDescription("Search personal documents using semantic similarity. Hierarchical mode (default) finds relevant folders first and falls back to flat search. Flat mode searches all chunks directly."),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 		mcp.WithString("query", mcp.Required(), mcp.Description("Search query")),
 		mcp.WithNumber("limit", mcp.Description("Max results to return (default 5)")),
-		mcp.WithString("mode", mcp.Description("Search mode: 'hierarchical' (default), 'flat', or 'blended'")),
+		mcp.WithString("mode", mcp.Description("Search mode: 'hierarchical' (default) or 'flat'")),
 	), s.handleSearchDocuments)
 
 	mcpSrv.AddTool(mcp.NewTool("reindex_documents",
@@ -150,11 +152,8 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 	}
 
 	var points []qdrant.Point
-	var routing map[string]routingMetadata
 	if mode == "flat" {
 		points, err = s.flatSearch(ctx, vec, limit)
-	} else if mode == "blended" {
-		points, routing, err = s.blendedSearch(ctx, query, vec, limit)
 	} else {
 		points, err = s.hierarchicalSearch(ctx, vec, limit)
 	}
@@ -163,8 +162,11 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 	}
 
 	docsDir := s.cfg.RAGDocumentsDir
-	results := make([]map[string]interface{}, 0, len(points))
-	for _, p := range points {
+	validated, rejected := s.validateSearchCandidates(ctx, points)
+	validated = validated[:min(len(validated), limit)]
+
+	results := make([]map[string]interface{}, 0, len(validated))
+	for _, p := range validated {
 		fp, _ := p.Payload["file_path"].(string)
 		result := map[string]interface{}{
 			"score":       p.Score,
@@ -173,14 +175,160 @@ func (s *Server) handleSearchDocuments(ctx context.Context, req mcp.CallToolRequ
 			"heading":     p.Payload["heading"],
 			"chunk_index": p.Payload["chunk_index"],
 		}
-		if metadata, ok := routing[p.ID]; ok {
-			result["routing"] = metadata
-		}
 		results = append(results, result)
 	}
 
-	b, _ := json.MarshalIndent(results, "", "  ")
+	var response interface{} = results
+	if rejected.incomplete > 0 || rejected.legacyUnverified > 0 || rejected.outOfRoot > 0 || rejected.staleGeneration > 0 {
+		response = map[string]interface{}{
+			"results":    results,
+			"incomplete": true,
+			"rejected_candidates": map[string]int{
+				"incomplete":        rejected.incomplete,
+				"legacy_unverified": rejected.legacyUnverified,
+				"out_of_root":       rejected.outOfRoot,
+				"stale_generation":  rejected.staleGeneration,
+			},
+		}
+	}
+	b, _ := json.MarshalIndent(response, "", "  ")
 	return mcp.NewToolResultText(string(b)), nil
+}
+
+type rejectedCandidates struct {
+	incomplete       int
+	legacyUnverified int
+	outOfRoot        int
+	staleGeneration  int
+}
+
+type candidateGeneration struct {
+	filePath   string
+	generation string
+	validated  validatedGeneration
+}
+
+// validateSearchCandidates discards the search response payload and replaces
+// it with the separately-scrolled, sealed generation payload. Search is only
+// a ranking hint; it is never a publication proof or a source for formatted
+// document text.
+func (s *Server) validateSearchCandidates(ctx context.Context, candidates []qdrant.Point) ([]qdrant.Point, rejectedCandidates) {
+	var rejected rejectedCandidates
+	discoveredByFile := make(map[string]sealedGenerationDiscovery)
+	discoveryFailed := make(map[string]bool)
+	fileOrder := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		filePath, ok := candidate.Payload["file_path"].(string)
+		if !ok || filePath == "" || !s.pathWithinDocumentsRoot(filePath) {
+			continue
+		}
+		if _, exists := discoveredByFile[filePath]; !exists {
+			discoveredByFile[filePath] = sealedGenerationDiscovery{}
+			fileOrder = append(fileOrder, filePath)
+		}
+	}
+
+	for _, filePath := range fileOrder {
+		validated, err := discoverSealedGenerations(ctx, s.validateChunks, filePath)
+		if err != nil {
+			discoveryFailed[filePath] = true
+			continue
+		}
+		discoveredByFile[filePath] = validated
+	}
+
+	// A failed cleanup can leave several valid sealed generations, including a
+	// newer one that did not make the bounded semantic candidate list. Discover
+	// every sealed generation for each candidate file before choosing freshness.
+	selectedGeneration := make(map[string]string)
+	for _, filePath := range fileOrder {
+		if discoveryFailed[filePath] {
+			continue
+		}
+		for generation, validated := range discoveredByFile[filePath].generations {
+			entry := &candidateGeneration{filePath: filePath, generation: generation, validated: validated}
+			current, exists := selectedGeneration[filePath]
+			if !exists || newerGeneration(entry, &candidateGeneration{filePath: filePath, generation: current, validated: discoveredByFile[filePath].generations[current]}) {
+				selectedGeneration[filePath] = generation
+			}
+		}
+	}
+
+	incompleteFiles := make(map[string]bool)
+	returnedIndexes := make(map[string]map[int]bool)
+	result := make([]qdrant.Point, 0, len(candidates))
+	for _, candidate := range candidates {
+		filePath, ok := candidate.Payload["file_path"].(string)
+		if !ok || filePath == "" {
+			rejected.incomplete++
+			continue
+		}
+		if !s.pathWithinDocumentsRoot(filePath) {
+			rejected.outOfRoot++
+			continue
+		}
+		generation, ok := candidate.Payload["generation"].(string)
+		if !ok || generation == "" {
+			rejected.legacyUnverified++
+			continue
+		}
+		layout, ok := candidate.Payload["layout"].(string)
+		if !ok || layout == "" {
+			rejected.legacyUnverified++
+			continue
+		}
+		if discoveryFailed[filePath] {
+			if !incompleteFiles[filePath] {
+				rejected.incomplete++
+				incompleteFiles[filePath] = true
+			}
+			continue
+		}
+		if discoveredByFile[filePath].pending && !incompleteFiles[filePath] {
+			rejected.incomplete++
+			incompleteFiles[filePath] = true
+		}
+		selected, exists := selectedGeneration[filePath]
+		if !exists {
+			if !incompleteFiles[filePath] {
+				rejected.incomplete++
+				incompleteFiles[filePath] = true
+			}
+			continue
+		}
+		if generation != selected {
+			rejected.staleGeneration++
+			continue
+		}
+		validated, known := discoveredByFile[filePath].generations[selected]
+		if !known {
+			continue
+		}
+		index, ok := payloadInt(candidate.Payload["chunk_index"])
+		if !ok || index < 0 || index >= len(validated.points) {
+			rejected.incomplete++
+			continue
+		}
+		if returnedIndexes[filePath] == nil {
+			returnedIndexes[filePath] = make(map[int]bool)
+		}
+		if returnedIndexes[filePath][index] {
+			continue
+		}
+		returnedIndexes[filePath][index] = true
+		// Keep the query score and routing key, but replace every raw payload
+		// field with the validation readback.
+		candidate.Payload = validated.points[index].Payload
+		result = append(result, candidate)
+	}
+	return result, rejected
+}
+
+func newerGeneration(candidate, current *candidateGeneration) bool {
+	if candidate.validated.sealedAt.Equal(current.validated.sealedAt) {
+		return candidate.generation > current.generation
+	}
+	return candidate.validated.sealedAt.After(current.validated.sealedAt)
 }
 
 func parseSearchDocumentsArgs(args map[string]any) (query string, limit int, mode, validationErr string) {
@@ -202,12 +350,16 @@ func parseSearchDocumentsArgs(args map[string]any) (query string, limit int, mod
 	mode = "hierarchical"
 	if raw, exists := args["mode"]; exists {
 		m, ok := raw.(string)
-		if !ok || (m != "hierarchical" && m != "flat" && m != "blended") {
-			return "", 0, "", "mode must be 'hierarchical', 'flat', or 'blended'"
+		if !ok || (m != "hierarchical" && m != "flat") {
+			return "", 0, "", "mode must be 'hierarchical' or 'flat'"
 		}
 		mode = m
 	}
 	return query, limit, mode, ""
+}
+
+func (s *Server) pathWithinDocumentsRoot(path string) bool {
+	return s.cfg == nil || s.cfg.RAGDocumentsDir == "" || pathWithinRoot(s.cfg.RAGDocumentsDir, path)
 }
 
 // relPath returns a path only when it can be represented inside base. It never
@@ -353,33 +505,39 @@ func (s *Server) blendedSearch(ctx context.Context, query string, vec []float32,
 		points[i] = pointsByID[result.ID]
 		routing[result.ID] = routingForFusedResult(result, selectedFolders)
 	}
-	if s.reranker != nil && len(points) > 0 {
-		candidateCount := min(len(points), s.rerankerCap)
-		candidates := make([]rerank.Candidate, candidateCount)
-		for i := 0; i < candidateCount; i++ {
-			text, _ := points[i].Payload["text"].(string)
-			candidates[i] = rerank.Candidate{ID: points[i].ID, Text: text}
-		}
-		reranked, reason := rerank.ApplyFailOpen(ctx, s.reranker, query, candidates)
-		if reason == rerank.ReasonApplied {
-			byID := make(map[string]qdrant.Point, candidateCount)
-			for _, point := range points[:candidateCount] {
-				byID[point.ID] = point
-			}
-			for i := 0; i < len(reranked) && i < candidateCount; i++ {
-				if point, ok := byID[reranked[i].ID]; ok {
-					points[i] = point
-				}
-			}
-		}
+	// Publication validation (and optional reranking) runs in the request
+	// handler. This function intentionally returns a bounded raw ranking only.
+	return points, routing, nil
+}
+
+func (s *Server) rerankValidated(ctx context.Context, query string, points []qdrant.Point, routing map[string]routingMetadata) ([]qdrant.Point, map[string]routingMetadata) {
+	if s.reranker == nil || len(points) == 0 {
+		return points, routing
+	}
+	candidateCount := min(len(points), s.rerankerCap)
+	candidates := make([]rerank.Candidate, candidateCount)
+	for i := 0; i < candidateCount; i++ {
+		text, _ := points[i].Payload["text"].(string)
+		candidates[i] = rerank.Candidate{ID: points[i].ID, Text: text}
+	}
+	reranked, reason := rerank.ApplyFailOpen(ctx, s.reranker, query, candidates)
+	if reason == rerank.ReasonApplied {
+		byID := make(map[string]qdrant.Point, candidateCount)
 		for _, point := range points[:candidateCount] {
-			metadata := routing[point.ID]
-			metadata.ReasonCodes = append(metadata.ReasonCodes, reason)
-			routing[point.ID] = metadata
+			byID[point.ID] = point
+		}
+		for i := 0; i < len(reranked) && i < candidateCount; i++ {
+			if point, ok := byID[reranked[i].ID]; ok {
+				points[i] = point
+			}
 		}
 	}
-	points = points[:min(len(points), resultLimit)]
-	return points, routing, nil
+	for _, point := range points[:candidateCount] {
+		metadata := routing[point.ID]
+		metadata.ReasonCodes = append(metadata.ReasonCodes, reason)
+		routing[point.ID] = metadata
+	}
+	return points, routing
 }
 
 func pointIDs(points []qdrant.Point) []string {

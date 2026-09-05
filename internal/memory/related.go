@@ -17,6 +17,7 @@ type RelatedFactCandidate struct {
 	Namespace  string         `json:"namespace"`
 	Tags       []string       `json:"tags"`
 	PrimaryTag string         `json:"primary_tag,omitempty"`
+	ValidUntil string         `json:"valid_until,omitempty"`
 	Lifecycle  lifecycle.View `json:"lifecycle"`
 }
 
@@ -62,6 +63,10 @@ func selectRelatedCandidates(points []qdrant.Point, relatedLow, dedupThreshold f
 }
 
 func projectRelatedFactCandidate(point qdrant.Point, view lifecycle.View) RelatedFactCandidate {
+	validUntil := ""
+	if _, present, err := validUntilPayload(point.Payload); present && err == nil {
+		validUntil = relatedCandidateString(point.Payload, "valid_until")
+	}
 	return RelatedFactCandidate{
 		PointID:    point.ID,
 		Text:       relatedCandidateString(point.Payload, "text"),
@@ -69,6 +74,7 @@ func projectRelatedFactCandidate(point qdrant.Point, view lifecycle.View) Relate
 		Namespace:  relatedCandidateString(point.Payload, "namespace"),
 		Tags:       relatedCandidateTags(point.Payload["tags"]),
 		PrimaryTag: relatedCandidateString(point.Payload, "primary_tag"),
+		ValidUntil: validUntil,
 		Lifecycle:  view,
 	}
 }

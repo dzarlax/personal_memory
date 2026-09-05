@@ -957,11 +957,26 @@ func factExpiredAt(payload map[string]any, now time.Time) bool {
 		return false
 	}
 	value, ok := raw.(string)
-	if !ok || value == "" {
-		return false
+	if !ok {
+		return true
 	}
-	expiry, err := time.Parse("2006-01-02", value)
-	return err == nil && now.After(expiry)
+	expiry, err := parseUTCCalendarDate(value)
+	if err != nil {
+		return true
+	}
+	utc := now.UTC()
+	referenceDate := time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.UTC)
+	return referenceDate.After(expiry)
+}
+
+// parseUTCCalendarDate keeps eval's expiry semantics aligned with the runtime
+// without importing internal/memory (which would create a package cycle).
+func parseUTCCalendarDate(value string) (time.Time, error) {
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil || len(value) != len("2006-01-02") || parsed.Format("2006-01-02") != value {
+		return time.Time{}, fmt.Errorf("must use exact YYYY-MM-DD format")
+	}
+	return parsed.UTC(), nil
 }
 
 func randomSuffix() (string, error) {

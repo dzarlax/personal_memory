@@ -80,15 +80,28 @@ func (s *Server) withFactMutationLock(namespace string, mutation func() bool) bo
 	return mutation()
 }
 
-func (s *Server) rejectInactivePointCollision(ctx context.Context, pointID string) error {
+type deterministicPointCheck string
+
+const (
+	deterministicPointAvailable         deterministicPointCheck = "available"
+	deterministicPointCollision         deterministicPointCheck = "collision"
+	deterministicPointInactiveCollision deterministicPointCheck = "inactive_collision"
+	deterministicPointDependencyFailed  deterministicPointCheck = "dependency_failed"
+)
+
+func (s *Server) checkDeterministicPoint(ctx context.Context, pointID string) (deterministicPointCheck, string) {
 	point, found, err := s.qdrant.Get(ctx, pointID)
 	if err != nil {
-		return fmt.Errorf("exact deterministic point lookup failed: %w", err)
+		slog.Warn("deterministic point lookup failed", "point_id", pointID)
+		return deterministicPointDependencyFailed, "deterministic point lookup failed; no write attempted"
 	}
-	if found && !activeMemoryPayload(point.Payload) {
-		return fmt.Errorf("deterministic point_id belongs to an inactive fact; use the maintenance restore workflow")
+	if !found {
+		return deterministicPointAvailable, ""
 	}
-	return nil
+	if !activeMemoryPayload(point.Payload) {
+		return deterministicPointInactiveCollision, "deterministic point_id belongs to an inactive fact; use the maintenance restore workflow"
+	}
+	return deterministicPointCollision, "deterministic point_id already exists; use update_fact or set_fact_lifecycle"
 }
 
 // Start starts the bounded recall-counter worker. It is safe to call once.
@@ -96,7 +109,7 @@ func (s *Server) Start(ctx context.Context) {
 	s.recallCounterMu.Lock()
 	defer s.recallCounterMu.Unlock()
 	if s.recallCounter == nil {
-		s.recallCounter = newRecallCounter(ctx, s.qdrant, defaultRecallQueueSize, defaultRecallFlushInterval)
+		s.recallCounter = newRecallCounter(ctx, s.qdrant, s.cache.Invalidate, defaultRecallQueueSize, defaultRecallFlushInterval)
 	}
 }
 
@@ -496,20 +509,53 @@ func nowISO() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
-func isExpired(payload map[string]interface{}) bool {
-	v, ok := payload["valid_until"]
-	if !ok || v == nil {
-		return false
+const utcCalendarDateLayout = "2006-01-02"
+
+// parseUTCCalendarDate accepts only a real, zero-padded ISO calendar date.
+// Dates intentionally have no time-of-day or local-time interpretation.
+func parseUTCCalendarDate(value string) (time.Time, error) {
+	parsed, err := time.Parse(utcCalendarDateLayout, value)
+	if err != nil || len(value) != len(utcCalendarDateLayout) || parsed.Format(utcCalendarDateLayout) != value {
+		return time.Time{}, fmt.Errorf("must use exact YYYY-MM-DD format")
 	}
-	s, ok := v.(string)
-	if !ok || s == "" {
-		return false
+	return parsed.UTC(), nil
+}
+
+// validUntilPayload returns whether an expiry is present and valid. A present
+// malformed value is never treated as an unexpired current fact.
+func validUntilPayload(payload map[string]interface{}) (time.Time, bool, error) {
+	raw, exists := payload["valid_until"]
+	if !exists || raw == nil {
+		return time.Time{}, false, nil
 	}
-	t, err := time.Parse("2006-01-02", s)
+	value, ok := raw.(string)
+	if !ok {
+		return time.Time{}, true, fmt.Errorf("valid_until must be an exact YYYY-MM-DD calendar date")
+	}
+	parsed, err := parseUTCCalendarDate(value)
 	if err != nil {
-		return false
+		return time.Time{}, true, fmt.Errorf("valid_until %w", err)
 	}
-	return time.Now().After(t)
+	return parsed, true, nil
+}
+
+func validUntilArgument(args map[string]interface{}) (string, error) {
+	raw, exists := args["valid_until"]
+	if !exists || raw == nil {
+		return "", nil
+	}
+	value, ok := raw.(string)
+	if !ok {
+		return "", fmt.Errorf("valid_until must use exact YYYY-MM-DD format")
+	}
+	if _, err := parseUTCCalendarDate(value); err != nil {
+		return "", fmt.Errorf("valid_until must use exact YYYY-MM-DD format")
+	}
+	return value, nil
+}
+
+func isExpired(payload map[string]interface{}) bool {
+	return factExpiredAt(payload, time.Now().UTC())
 }
 
 func (s *Server) buildFilters(tags []string, namespace string) map[string]interface{} {
@@ -610,8 +656,22 @@ type StoreFactResult struct {
 	Status       string                 `json:"status"`
 	Stored       bool                   `json:"stored"`
 	PointID      string                 `json:"point_id,omitempty"`
+	Message      string                 `json:"message,omitempty"`
 	Duplicate    *RelatedFactCandidate  `json:"duplicate,omitempty"`
 	RelatedFacts []RelatedFactCandidate `json:"related_facts"`
+}
+
+type ImportFactItemResult struct {
+	ItemIndex int                   `json:"item_index"`
+	Status    string                `json:"status"`
+	PointID   string                `json:"point_id,omitempty"`
+	Message   string                `json:"message,omitempty"`
+	Duplicate *RelatedFactCandidate `json:"duplicate,omitempty"`
+}
+
+type ImportFactsResult struct {
+	Imported int                    `json:"imported"`
+	Outcomes []ImportFactItemResult `json:"outcomes"`
 }
 
 type FindRelatedResult struct {
@@ -640,10 +700,11 @@ type RecallFact struct {
 }
 
 type RecallFactsResult struct {
-	Count         int                 `json:"count"`
-	LifecycleMode RecallLifecycleMode `json:"lifecycle_mode"`
-	AsOf          string              `json:"as_of,omitempty"`
-	Facts         []RecallFact        `json:"facts"`
+	Count                    int                 `json:"count"`
+	LifecycleMode            RecallLifecycleMode `json:"lifecycle_mode"`
+	AsOf                     string              `json:"as_of,omitempty"`
+	CandidateWindowSaturated bool                `json:"candidate_window_saturated"`
+	Facts                    []RecallFact        `json:"facts"`
 }
 
 func formatRelatedCandidate(candidate RelatedFactCandidate) string {
@@ -662,12 +723,33 @@ func formatStoreFactResult(result StoreFactResult) string {
 	if result.PointID != "" {
 		lines = append(lines, "point_id: "+result.PointID)
 	}
+	if result.Message != "" {
+		lines = append(lines, "message: "+result.Message)
+	}
 	if result.Duplicate != nil {
 		lines = append(lines, "duplicate:", formatRelatedCandidate(*result.Duplicate))
 	}
 	lines = append(lines, fmt.Sprintf("related_facts: %d", len(result.RelatedFacts)))
 	for _, candidate := range result.RelatedFacts {
 		lines = append(lines, formatRelatedCandidate(candidate))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func formatImportFactsResult(result ImportFactsResult) string {
+	lines := []string{fmt.Sprintf("imported: %d", result.Imported), fmt.Sprintf("outcomes: %d", len(result.Outcomes))}
+	for _, outcome := range result.Outcomes {
+		line := fmt.Sprintf("- item_index: %d status: %s", outcome.ItemIndex, outcome.Status)
+		if outcome.PointID != "" {
+			line += " point_id: " + outcome.PointID
+		}
+		if outcome.Message != "" {
+			line += " message: " + outcome.Message
+		}
+		lines = append(lines, line)
+		if outcome.Duplicate != nil {
+			lines = append(lines, formatRelatedCandidate(*outcome.Duplicate))
+		}
 	}
 	return strings.Join(lines, "\n")
 }
@@ -707,11 +789,9 @@ func (s *Server) storeFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 		}
 	}
 	permanent := boolParam(args, "permanent", false)
-	validUntil := strParam(args, "valid_until")
-	if validUntil != "" {
-		if _, err := time.Parse("2006-01-02", validUntil); err != nil {
-			return mcp.NewToolResultError("valid_until must use YYYY-MM-DD format"), nil
-		}
+	validUntil, err := validUntilArgument(args)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
 	vec, err := s.embed.Embed(ctx, fact)
@@ -722,8 +802,11 @@ func (s *Server) storeFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	unlockMutation := s.lockFactMutations(namespace)
 	defer unlockMutation()
 
-	if err := s.rejectInactivePointCollision(ctx, pointID); err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+	if check, message := s.checkDeterministicPoint(ctx, pointID); check != deterministicPointAvailable {
+		result := StoreFactResult{Status: string(check), Stored: false, PointID: pointID, Message: message, RelatedFacts: []RelatedFactCandidate{}}
+		toolResult := mcp.NewToolResultStructured(result, formatStoreFactResult(result))
+		toolResult.IsError = true
+		return toolResult, nil
 	}
 
 	dedupLimit := lifecycleCandidateLimit(relatedFactResultLimit)
@@ -785,6 +868,12 @@ func (s *Server) storeFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 		payload = lifecycle.ApplyToPayload(payload, targetLifecycle)
 	}
 
+	writeDispatched := true
+	defer func() {
+		if writeDispatched {
+			s.cache.Invalidate()
+		}
+	}()
 	if err := s.qdrant.Upsert(ctx, qdrant.Point{
 		ID:      pointID,
 		Vector:  vec,
@@ -792,8 +881,6 @@ func (s *Server) storeFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.C
 	}); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("store failed: %v", err)), nil
 	}
-
-	s.cache.Invalidate()
 
 	result := StoreFactResult{
 		Status:       "stored",
@@ -844,10 +931,12 @@ func (s *Server) recallFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		return mcp.NewToolResultError(fmt.Sprintf("embedding failed: %v", err)), nil
 	}
 
-	results, err := s.qdrant.Search(ctx, vec, lifecycleCandidateLimit(limit), lifecycleRecallFilters(s.buildFilters(tags, namespace), lifecycleOptions.Mode), nil)
+	candidateLimit := lifecycleCandidateLimit(limit)
+	results, err := s.qdrant.Search(ctx, vec, candidateLimit, lifecycleRecallFilters(s.buildFilters(tags, namespace), lifecycleOptions.Mode), nil)
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("search failed: %v", err)), nil
 	}
+	candidateWindowSaturated := len(results) == candidateLimit
 	results = activeSearchPoints(results)
 
 	candidates := presentLifecycleRecallCandidates(results, lifecycleOptions, time.Now())
@@ -855,9 +944,10 @@ func (s *Server) recallFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 		candidates = candidates[:limit]
 	}
 	result := RecallFactsResult{
-		LifecycleMode: lifecycleOptions.normalizedMode(),
-		AsOf:          lifecycleOptions.AsOf,
-		Facts:         make([]RecallFact, 0, len(candidates)),
+		LifecycleMode:            lifecycleOptions.normalizedMode(),
+		AsOf:                     lifecycleOptions.AsOf,
+		CandidateWindowSaturated: candidateWindowSaturated,
+		Facts:                    make([]RecallFact, 0, len(candidates)),
 	}
 	for _, candidate := range candidates {
 		point := candidate.point
@@ -1037,6 +1127,13 @@ func (s *Server) updateFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 		payload = lifecycle.ApplyToPayload(payload, targetLifecycle)
 	}
 
+	writeDispatched := false
+	defer func() {
+		if writeDispatched {
+			s.cache.Invalidate()
+		}
+	}()
+	writeDispatched = true
 	if err := s.qdrant.Upsert(ctx, qdrant.Point{
 		ID:      newID,
 		Vector:  newVec,
@@ -1044,10 +1141,9 @@ func (s *Server) updateFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	}); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("store updated fact failed: %v", err)), nil
 	}
-	// The new point is visible even if deleting the old ID fails.
-	s.cache.Invalidate()
 
 	if old.ID != newID {
+		writeDispatched = true
 		if err := s.qdrant.Delete(ctx, []string{old.ID}); err != nil {
 			slog.Warn(
 				"delete old point after update failed; duplicate may remain",
@@ -1153,11 +1249,17 @@ func (s *Server) deleteFact(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if NormalizeNamespace(stringFromPayload(target.Payload["namespace"])) != namespace {
 		return mcp.NewToolResultError("fact namespace changed during delete; retry"), nil
 	}
+	// A delete error after dispatch is ambiguous: the server may have applied
+	// it before the client lost the response. Invalidate before reporting it.
+	writeDispatched := true
+	defer func() {
+		if writeDispatched {
+			s.cache.Invalidate()
+		}
+	}()
 	if err := s.qdrant.Delete(ctx, []string{target.ID}); err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("delete failed: %v", err)), nil
 	}
-
-	s.cache.Invalidate()
 	text, _ := target.Payload["text"].(string)
 	return mcp.NewToolResultText(fmt.Sprintf("Deleted: %s (score %.2f)", text, targetCandidate.Score)), nil
 }
@@ -1228,23 +1330,36 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	}
 
 	candidates := make([]importCandidate, 0, len(facts))
-	skipped := 0
+	outcomesByIndex := make(map[int]ImportFactItemResult, len(facts))
+	setOutcome := func(index int, status, pointID, message string, duplicate *RelatedFactCandidate) {
+		outcomesByIndex[index] = ImportFactItemResult{
+			ItemIndex: index,
+			Status:    status,
+			PointID:   pointID,
+			Message:   message,
+			Duplicate: duplicate,
+		}
+	}
 	for index, f := range facts {
 		text, _ := f["text"].(string)
 		if err := validateBoundedString("text", text, maxFactBytes, true); err != nil {
-			skipped++
+			setOutcome(index, "invalid", "", err.Error(), nil)
 			continue
 		}
 		if err := validateNamespace(stringFromPayload(f["namespace"])); err != nil {
-			skipped++
+			setOutcome(index, "invalid", "", err.Error(), nil)
 			continue
 		}
 		if err := validateTagsPayload(f["tags"]); err != nil {
-			skipped++
+			setOutcome(index, "invalid", "", err.Error(), nil)
 			continue
 		}
 		if err := validateBoundedString("primary_tag", stringFromPayload(f["primary_tag"]), maxTagBytes, false); err != nil {
-			skipped++
+			setOutcome(index, "invalid", "", err.Error(), nil)
+			continue
+		}
+		if _, _, err := validUntilPayload(f); err != nil {
+			setOutcome(index, "invalid", "", err.Error(), nil)
 			continue
 		}
 
@@ -1263,7 +1378,7 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 			importedLifecycle, err = lifecycle.Parse(f, pointID)
 			if err != nil {
 				slog.Warn("import lifecycle validation failed", "item_index", index, "point_id", pointID, "error", err)
-				skipped++
+				setOutcome(index, "invalid", pointID, "lifecycle metadata is invalid", nil)
 				continue
 			}
 		}
@@ -1297,7 +1412,7 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 			vec, embedErr := s.embed.Embed(ctx, candidates[index].text)
 			if embedErr != nil {
 				slog.Warn("import embed failed", "item_index", candidates[index].itemIndex, "point_id", candidates[index].pointID)
-				skipped++
+				setOutcome(candidates[index].itemIndex, "embedding_failed", candidates[index].pointID, "embedding failed", nil)
 				continue
 			}
 			candidates[index].vector = vec
@@ -1306,13 +1421,16 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	}
 
 	imported := 0
+	writesDispatched := false
 	for _, candidate := range candidates {
 		if !candidate.embeddingReady {
 			continue
 		}
-		itemImported := s.withFactMutationLock(candidate.namespace, func() bool {
-			if err := s.rejectInactivePointCollision(ctx, candidate.pointID); err != nil {
-				slog.Warn("import inactive point collision", "item_index", candidate.itemIndex, "point_id", candidate.pointID, "error", err)
+		outcome := ImportFactItemResult{ItemIndex: candidate.itemIndex, PointID: candidate.pointID, Status: "failed"}
+		s.withFactMutationLock(candidate.namespace, func() bool {
+			if check, message := s.checkDeterministicPoint(ctx, candidate.pointID); check != deterministicPointAvailable {
+				outcome.Status = string(check)
+				outcome.Message = message
 				return false
 			}
 			// Deduplication is namespace-scoped and lifecycle-aware, matching
@@ -1331,7 +1449,15 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 			if searchErr == nil {
 				existing = activeSearchPoints(existing)
 				duplicate, _ := selectRelatedCandidates(existing, s.relatedFactLow, s.dedupThreshold, relatedFactResultLimit)
-				if duplicate != nil || len(existing) == dedupLimit {
+				if duplicate != nil {
+					outcome.Status = "duplicate"
+					outcome.Message = "semantic duplicate blocks import"
+					outcome.Duplicate = duplicate
+					return false
+				}
+				if len(existing) == dedupLimit {
+					outcome.Status = "inconclusive"
+					outcome.Message = "duplicate preflight candidate limit reached"
 					return false
 				}
 			}
@@ -1365,27 +1491,40 @@ func (s *Server) importFacts(ctx context.Context, req mcp.CallToolRequest) (*mcp
 				payload = lifecycle.ApplyToPayload(payload, candidate.lifecycle)
 			}
 
+			writesDispatched = true
 			if err := s.qdrant.Upsert(ctx, qdrant.Point{
 				ID:      candidate.pointID,
 				Vector:  candidate.vector,
 				Payload: payload,
 			}); err != nil {
 				slog.Warn("import upsert failed", "item_index", candidate.itemIndex, "point_id", candidate.pointID)
+				outcome.Status = "write_ambiguous"
+				outcome.Message = "write outcome is ambiguous; verify before retrying"
 				return false
 			}
+			outcome.Status = "stored"
+			outcome.Message = ""
 			return true
 		})
-		if itemImported {
+		setOutcome(candidate.itemIndex, outcome.Status, outcome.PointID, outcome.Message, outcome.Duplicate)
+		if outcome.Status == "stored" {
 			imported++
-		} else {
-			skipped++
 		}
 	}
 
-	if imported > 0 {
+	if writesDispatched {
 		s.cache.Invalidate()
 	}
-	return mcp.NewToolResultText(fmt.Sprintf("Imported %d facts, skipped %d.", imported, skipped)), nil
+	outcomes := make([]ImportFactItemResult, 0, len(facts))
+	for index := range facts {
+		outcome, ok := outcomesByIndex[index]
+		if !ok {
+			outcome = ImportFactItemResult{ItemIndex: index, Status: "failed", Message: "item was not processed"}
+		}
+		outcomes = append(outcomes, outcome)
+	}
+	result := ImportFactsResult{Imported: imported, Outcomes: outcomes}
+	return mcp.NewToolResultStructured(result, formatImportFactsResult(result)), nil
 }
 
 func (s *Server) findRelated(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -1761,6 +1900,9 @@ func (s *Server) OperationalContextHandler() http.HandlerFunc {
 
 func formatRecallFactsResult(result RecallFactsResult) string {
 	if len(result.Facts) == 0 {
+		if result.CandidateWindowSaturated {
+			return "No facts found. Candidate window saturated; results may be incomplete."
+		}
 		return "No facts found."
 	}
 	lines := make([]string, 0, len(result.Facts))
@@ -1773,6 +1915,9 @@ func formatRecallFactsResult(result RecallFactsResult) string {
 			line = fmt.Sprintf("- [%.3f] %s%s ns:%s recalls:%d %s %s", fact.SemanticScore, tagsList, primary, fact.Namespace, fact.RecallCount, lifecycleSummary, fact.Text)
 		}
 		lines = append(lines, line)
+	}
+	if result.CandidateWindowSaturated {
+		lines = append(lines, "Candidate window saturated; results may be incomplete.")
 	}
 	return strings.Join(lines, "\n")
 }
