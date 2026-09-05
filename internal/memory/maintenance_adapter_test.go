@@ -85,10 +85,15 @@ func TestOrdinaryWritesDoNotReplaceInactiveDeterministicIDs(t *testing.T) {
 				if err != nil || !result.IsError {
 					t.Fatalf("store result=%#v err=%v", result, err)
 				}
+				structured, ok := result.StructuredContent.(StoreFactResult)
+				if !ok || structured.Status != "inactive_collision" {
+					t.Fatalf("store structured result=%#v", result.StructuredContent)
+				}
 			} else {
 				facts, _ := json.Marshal([]map[string]interface{}{{"text": fact, "namespace": namespace}})
 				result, err := srv.importFacts(context.Background(), toolRequest(map[string]interface{}{"facts": string(facts)}))
-				if err != nil || result.IsError || !strings.Contains(toolResultText(t, result), "Imported 0 facts, skipped 1") {
+				structured, ok := result.StructuredContent.(ImportFactsResult)
+				if err != nil || result.IsError || !ok || structured.Imported != 0 || len(structured.Outcomes) != 1 || structured.Outcomes[0].Status != "inactive_collision" {
 					t.Fatalf("import result=%#v err=%v", result, err)
 				}
 			}

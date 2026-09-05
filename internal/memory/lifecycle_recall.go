@@ -84,8 +84,8 @@ func parseLifecycleRecallOptions(args map[string]interface{}) (LifecycleRecallOp
 	if !ok {
 		return LifecycleRecallOptions{}, fmt.Errorf("as_of must be a string")
 	}
-	parsed, err := time.Parse("2006-01-02", asOf)
-	if err != nil || len(asOf) != len("2006-01-02") || parsed.Format("2006-01-02") != asOf {
+	parsed, err := parseUTCCalendarDate(asOf)
+	if err != nil {
 		return LifecycleRecallOptions{}, fmt.Errorf("as_of must use exact YYYY-MM-DD format")
 	}
 	return LifecycleRecallOptions{Mode: mode, AsOf: parsed.Format("2006-01-02")}, nil
@@ -158,7 +158,7 @@ func presentLifecycleRecallCandidates(points []qdrant.Point, options LifecycleRe
 	mode := options.normalizedMode()
 	reference := now.UTC()
 	if mode == RecallLifecycleAsOf {
-		if parsed, err := time.Parse("2006-01-02", options.AsOf); err == nil {
+		if parsed, err := parseUTCCalendarDate(options.AsOf); err == nil {
 			reference = parsed
 		}
 	}
@@ -223,17 +223,15 @@ func lifecycleRecallDecision(mode RecallLifecycleMode, view lifecycle.View, hasC
 }
 
 func factExpiredAt(payload map[string]interface{}, reference time.Time) bool {
-	raw, exists := payload["valid_until"]
-	if !exists || raw == nil {
+	expiry, present, err := validUntilPayload(payload)
+	if !present {
 		return false
 	}
-	value, ok := raw.(string)
-	if !ok || value == "" {
-		return false
-	}
-	expiry, err := time.Parse("2006-01-02", value)
 	if err != nil {
-		return false
+		// A malformed explicit expiry is not safe current context. It remains
+		// inspectable through inventory surfaces, where its malformed payload is
+		// visible, but no recall mode presents it as valid.
+		return true
 	}
 	utc := reference.UTC()
 	referenceDate := time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.UTC)

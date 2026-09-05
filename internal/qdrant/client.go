@@ -107,6 +107,25 @@ func qdrantPointID(id string) interface{} {
 	return id
 }
 
+// decodeRequiredResult rejects successful HTTP envelopes that do not contain a
+// usable Qdrant result. An empty array/object remains a valid result; missing,
+// null, or explicit error envelopes are transport/protocol failures, not an
+// empty collection.
+func decodeRequiredResult(body []byte, target interface{}) error {
+	var envelope struct {
+		Status string          `json:"status"`
+		Result json.RawMessage `json:"result"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return err
+	}
+	result := bytes.TrimSpace(envelope.Result)
+	if envelope.Status == "error" || len(result) == 0 || bytes.Equal(result, []byte("null")) {
+		return fmt.Errorf("qdrant response has no usable result")
+	}
+	return json.Unmarshal(result, target)
+}
+
 // Get retrieves one point by its exact ID. The bool is false when Qdrant
 // reports that the point does not exist.
 func (c *Client) Get(ctx context.Context, id string) (Point, bool, error) {
@@ -131,16 +150,17 @@ func (c *Client) Get(ctx context.Context, id string) (Point, bool, error) {
 		return Point{}, false, fmt.Errorf("GET %s failed (status %d): %s", requestURL, resp.StatusCode, string(b))
 	}
 	var result struct {
-		Result struct {
-			ID      exactPointID           `json:"id"`
-			Vector  []float32              `json:"vector"`
-			Payload map[string]interface{} `json:"payload"`
-		} `json:"result"`
+		ID      *exactPointID          `json:"id"`
+		Vector  []float32              `json:"vector"`
+		Payload map[string]interface{} `json:"payload"`
 	}
-	if err := json.Unmarshal(b, &result); err != nil {
+	if err := decodeRequiredResult(b, &result); err != nil {
 		return Point{}, false, fmt.Errorf("decode point response: %w", err)
 	}
-	return Point{ID: parsePointID(result.Result.ID), Vector: result.Result.Vector, Payload: result.Result.Payload}, true, nil
+	if result.ID == nil || strings.TrimSpace(string(*result.ID)) == "" {
+		return Point{}, false, fmt.Errorf("decode point response: point id is required")
+	}
+	return Point{ID: parsePointID(*result.ID), Vector: result.Vector, Payload: result.Payload}, true, nil
 }
 
 // CollectionInfo returns the collection's point count, vector size, and
@@ -364,19 +384,17 @@ func (c *Client) Search(ctx context.Context, vector []float32, limit int, filter
 		return nil, err
 	}
 
-	var result struct {
-		Result []struct {
-			ID      exactPointID           `json:"id"`
-			Score   float64                `json:"score"`
-			Payload map[string]interface{} `json:"payload"`
-		} `json:"result"`
+	var result []struct {
+		ID      exactPointID           `json:"id"`
+		Score   float64                `json:"score"`
+		Payload map[string]interface{} `json:"payload"`
 	}
-	if err := json.Unmarshal(respBody, &result); err != nil {
+	if err := decodeRequiredResult(respBody, &result); err != nil {
 		return nil, fmt.Errorf("decode search response: %w", err)
 	}
 
-	points := make([]Point, len(result.Result))
-	for i, r := range result.Result {
+	points := make([]Point, len(result))
+	for i, r := range result {
 		points[i] = Point{
 			ID:      parsePointID(r.ID),
 			Score:   r.Score,
@@ -393,16 +411,19 @@ type ScrollResult struct {
 }
 
 func (r *ScrollResult) UnmarshalJSON(data []byte) error {
-	var decoded struct {
-		Points    []ScrollPoint   `json:"points"`
-		RawOffset json.RawMessage `json:"next_page_offset"`
-	}
+	var decoded map[string]json.RawMessage
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return err
 	}
-	r.Points = decoded.Points
+	rawPoints, present := decoded["points"]
+	if !present || bytes.Equal(bytes.TrimSpace(rawPoints), []byte("null")) {
+		return fmt.Errorf("scroll result points is required")
+	}
+	if err := json.Unmarshal(rawPoints, &r.Points); err != nil {
+		return fmt.Errorf("decode scroll result points: %w", err)
+	}
 	r.RawOffset = nil
-	raw := bytes.TrimSpace(decoded.RawOffset)
+	raw := bytes.TrimSpace(decoded["next_page_offset"])
 	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
 		return nil
 	}
@@ -455,18 +476,16 @@ func (c *Client) ScrollWithPayload(ctx context.Context, limit int, offset interf
 		return nil, err
 	}
 
-	var result struct {
-		Result ScrollResult `json:"result"`
-	}
-	if err := json.Unmarshal(respBody, &result); err != nil {
+	var result ScrollResult
+	if err := decodeRequiredResult(respBody, &result); err != nil {
 		return nil, fmt.Errorf("decode scroll response: %w", err)
 	}
 
-	for i := range result.Result.Points {
-		result.Result.Points[i].ID = parsePointID(result.Result.Points[i].RawID)
+	for i := range result.Points {
+		result.Points[i].ID = parsePointID(result.Points[i].RawID)
 	}
 
-	return &result.Result, nil
+	return &result, nil
 }
 
 // ScrollAll retrieves all points with full payload.

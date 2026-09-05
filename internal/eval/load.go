@@ -589,11 +589,8 @@ func (d *Dataset) ValidateForSource(source string) error {
 }
 
 func validISODate(value string) bool {
-	if len(value) != len("2006-01-02") {
-		return false
-	}
-	parsed, err := time.Parse("2006-01-02", value)
-	return err == nil && parsed.Format("2006-01-02") == value
+	_, err := parseUTCCalendarDate(value)
+	return err == nil
 }
 
 func validateLifecyclePayload(payload LifecyclePayload, field string) error {

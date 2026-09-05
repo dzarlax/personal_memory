@@ -153,7 +153,12 @@ func (c *recallCounter) flush(ctx context.Context, pending map[string]int) {
 			"recall_count":     count + delta,
 			"last_recalled_at": nowISO(),
 		}); err != nil {
-			slog.Error("recall counter: update failed", "point_id", id, "delta", delta, "error", err)
+			// SetPayload is a read-modify-write operation. Once its request has
+			// been dispatched, an error cannot tell us whether Qdrant applied the
+			// increment before the response was lost. Retrying this delta could
+			// double count, so deliberately drop it and keep the log content-free.
+			slog.Error("recall counter: update outcome ambiguous; dropped increment")
+			delete(pending, id)
 			continue
 		}
 		delete(pending, id)

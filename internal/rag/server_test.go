@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -78,18 +79,23 @@ func TestSearchDocumentsBlendedRescuesFlatTopAndReturnsPrivacySafeRouting(t *tes
 	chunks := fakePointSearcher{name: "chunks", calls: &calls, search: func(filter map[string]any) []qdrant.Point {
 		if filter != nil {
 			return []qdrant.Point{
-				{ID: "a", Score: .91, Payload: map[string]any{"text": "filtered a", "file_path": "/documents/project/a.md", "heading": "A", "chunk_index": 0}},
-				{ID: "b", Score: .90, Payload: map[string]any{"text": "filtered b", "file_path": "/documents/project/b.md", "heading": "B", "chunk_index": 0}},
+				{ID: "a", Score: .91, Payload: searchPayload("filtered a", "/documents/project/a.md", "A", "g-a")},
+				{ID: "b", Score: .90, Payload: searchPayload("filtered b", "/documents/project/b.md", "B", "g-b")},
 			}
 		}
 		return []qdrant.Point{
-			{ID: "flat-top", Score: .99, Payload: map[string]any{"text": "strong flat", "file_path": "/private/secret.md", "heading": "Secret", "chunk_index": 0, "unrestricted": "/do/not/expose"}},
-			{ID: "a", Score: .89, Payload: map[string]any{"text": "flat a", "file_path": "/documents/project/a.md", "heading": "A", "chunk_index": 0}},
-			{ID: "b", Score: .88, Payload: map[string]any{"text": "flat b", "file_path": "/documents/project/b.md", "heading": "B", "chunk_index": 0}},
+			{ID: "flat-top", Score: .99, Payload: mergePayload(searchPayload("strong flat", "/private/secret.md", "Secret", "g-private"), map[string]any{"unrestricted": "/do/not/expose"})},
+			{ID: "a", Score: .89, Payload: searchPayload("flat a", "/documents/project/a.md", "A", "g-a")},
+			{ID: "b", Score: .88, Payload: searchPayload("flat b", "/documents/project/b.md", "B", "g-b")},
 		}
 	}}
 	srv := &Server{
 		queryEmbed: fakeQueryEmbedder{}, searchChunks: chunks, searchFolders: folders,
+		validateChunks: sealedSearchValidator(map[string]qdrant.Point{
+			"/documents/project/a.md\x00g-a":  {ID: "a", Payload: searchPayload("filtered a", "/documents/project/a.md", "A", "g-a")},
+			"/documents/project/b.md\x00g-b":  {ID: "b", Payload: searchPayload("filtered b", "/documents/project/b.md", "B", "g-b")},
+			"/private/secret.md\x00g-private": {ID: "flat-top", Payload: searchPayload("strong flat", "/private/secret.md", "Secret", "g-private")},
+		}),
 		cfg: &config.Config{RAGDocumentsDir: documentsRoot, RAGFolderTopK: 3, RAGFolderThreshold: .5},
 	}
 	result, err := srv.handleSearchDocuments(context.Background(), mcp.CallToolRequest{
@@ -158,8 +164,11 @@ func TestSearchDocumentsDefaultDoesNotBecomeBlended(t *testing.T) {
 		}},
 		searchChunks: fakePointSearcher{search: func(_ map[string]any) []qdrant.Point {
 			chunkSearches++
-			return []qdrant.Point{{ID: "a", Score: .9, Payload: map[string]any{"text": "a", "file_path": "/documents/project/a.md"}}}
+			return []qdrant.Point{{ID: "a", Score: .9, Payload: searchPayload("a", "/documents/project/a.md", "", "g-a")}}
 		}},
+		validateChunks: sealedSearchValidator(map[string]qdrant.Point{
+			"/documents/project/a.md\x00g-a": {ID: "a", Payload: searchPayload("a", "/documents/project/a.md", "", "g-a")},
+		}),
 		cfg: &config.Config{RAGDocumentsDir: "/documents", RAGFolderTopK: 3, RAGFolderThreshold: .5},
 	}
 	result, err := srv.handleSearchDocuments(context.Background(), mcp.CallToolRequest{
@@ -224,6 +233,8 @@ func TestBlendedSearchReranksCandidatePoolBeforeFinalLimit(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			points, routing = srv.rerankValidated(context.Background(), "query", points, routing)
+			points = points[:2]
 			if got := pointIDs(points); !reflect.DeepEqual(got, test.wantIDs) {
 				t.Fatalf("point IDs = %v, want %v", got, test.wantIDs)
 			}
@@ -274,4 +285,65 @@ type fakeQueryEmbedder struct{}
 
 func (fakeQueryEmbedder) Embed(context.Context, string) ([]float32, error) {
 	return []float32{.1, .2}, nil
+}
+
+func searchPayload(text, filePath, heading, generation string) map[string]any {
+	return map[string]any{
+		"text": text, "file_path": filePath, "heading": heading, "generation": generation,
+		"layout": "test-layout", "file_hash": "test-hash-" + generation, "total_chunks": 1, "chunk_index": 0,
+	}
+}
+
+func mergePayload(base, extra map[string]any) map[string]any {
+	merged := make(map[string]any, len(base)+len(extra))
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range extra {
+		merged[key] = value
+	}
+	return merged
+}
+
+type sealedSearchValidator map[string]qdrant.Point
+
+func (v sealedSearchValidator) ScrollWithPayload(_ context.Context, _ int, _ interface{}, filter map[string]interface{}, _ interface{}, _ bool) (*qdrant.ScrollResult, error) {
+	must, _ := filter["must"].([]map[string]interface{})
+	filePath, _ := must[0]["match"].(map[string]interface{})["value"].(string)
+	if len(must) == 1 {
+		keys := make([]string, 0)
+		for key := range v {
+			if strings.HasPrefix(key, filePath+"\x00") {
+				keys = append(keys, key)
+			}
+		}
+		sort.Strings(keys)
+		points := make([]qdrant.ScrollPoint, 0, len(keys))
+		for _, key := range keys {
+			point := v[key]
+			payload := mergePayload(point.Payload, nil)
+			generation, _ := payload["generation"].(string)
+			fileHash, _ := payload["file_hash"].(string)
+			digest, err := generationDigest(filePath, generation, "test-layout", fileHash, []qdrant.ScrollPoint{{ID: point.ID, Payload: payload}})
+			if err != nil {
+				return nil, err
+			}
+			payload["publication"] = publicationDescriptor{Version: publicationVersion, FilePath: filePath, Generation: generation, Layout: "test-layout", FileHash: fileHash, SealedAt: "2026-09-05T00:00:00Z", TotalChunks: 1, OrderedDigest: digest}
+			points = append(points, qdrant.ScrollPoint{ID: point.ID, Payload: payload})
+		}
+		return &qdrant.ScrollResult{Points: points}, nil
+	}
+	generation, _ := must[1]["match"].(map[string]interface{})["value"].(string)
+	point, ok := v[filePath+"\x00"+generation]
+	if !ok {
+		return &qdrant.ScrollResult{}, nil
+	}
+	payload := mergePayload(point.Payload, nil)
+	fileHash, _ := payload["file_hash"].(string)
+	digest, err := generationDigest(filePath, generation, "test-layout", fileHash, []qdrant.ScrollPoint{{ID: point.ID, Payload: payload}})
+	if err != nil {
+		return nil, err
+	}
+	payload["publication"] = publicationDescriptor{Version: publicationVersion, FilePath: filePath, Generation: generation, Layout: "test-layout", FileHash: fileHash, SealedAt: "2026-09-05T00:00:00Z", TotalChunks: 1, OrderedDigest: digest}
+	return &qdrant.ScrollResult{Points: []qdrant.ScrollPoint{{ID: point.ID, Payload: payload}}}, nil
 }

@@ -80,7 +80,7 @@ func newRecallCounterTestServer(t *testing.T, initial int) (*Server, func() int)
 	}
 }
 
-func TestRecallCounterRetriesTransientWriteFailure(t *testing.T) {
+func TestRecallCounterDropsAmbiguousWriteFailureWithoutRetryingDelta(t *testing.T) {
 	var mu sync.Mutex
 	posts := 0
 	qs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,13 +90,10 @@ func TestRecallCounterRetriesTransientWriteFailure(t *testing.T) {
 		}
 		mu.Lock()
 		posts++
-		attempt := posts
 		mu.Unlock()
-		if attempt == 1 {
-			http.Error(w, "transient", http.StatusServiceUnavailable)
-			return
-		}
-		_, _ = w.Write([]byte(`{"status":"ok","result":{"status":"completed"}}`))
+		// Simulate Qdrant applying the increment but the response failing. A
+		// retry of the same read-modify-write delta would double count.
+		http.Error(w, "response lost after apply", http.StatusServiceUnavailable)
 	}))
 	defer qs.Close()
 	counter := newRecallCounter(context.Background(), qdrant.NewClient(qs.URL, "memory"), 2, 5*time.Millisecond)
@@ -108,11 +105,11 @@ func TestRecallCounterRetriesTransientWriteFailure(t *testing.T) {
 		mu.Lock()
 		got := posts
 		mu.Unlock()
-		if got >= 2 {
+		if got >= 1 {
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("write was not retried; attempts=%d", got)
+			t.Fatalf("write was not attempted; attempts=%d", got)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -120,6 +117,11 @@ func TestRecallCounterRetriesTransientWriteFailure(t *testing.T) {
 	defer cancel()
 	if err := counter.stop(ctx); err != nil {
 		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if posts != 1 {
+		t.Fatalf("ambiguous delta was retried: attempts=%d", posts)
 	}
 }
 

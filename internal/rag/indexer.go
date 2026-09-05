@@ -2,8 +2,10 @@ package rag
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,6 +59,9 @@ type generationState struct {
 	totalChunks  int
 	chunkIndexes map[int]bool
 	pointIDs     []string
+	fileHash     string
+	layout       string
+	sealed       bool
 }
 
 // Run performs an incremental re-index of the documents directory.
@@ -76,6 +81,7 @@ func (idx *Indexer) Run(ctx context.Context) error {
 	}
 
 	dirtyFolders := map[string]bool{}
+	var indexErrors []error
 	for dir := range folderRefresh {
 		dirtyFolders[dir] = true
 	}
@@ -105,6 +111,7 @@ func (idx *Indexer) Run(ctx context.Context) error {
 		}
 		if err != nil {
 			slog.Warn("failed to index file", "path", path, "error", err)
+			indexErrors = append(indexErrors, fmt.Errorf("index file %s: %w", path, err))
 			return nil
 		}
 		return nil
@@ -119,6 +126,7 @@ func (idx *Indexer) Run(ctx context.Context) error {
 	cleanupHealthy, cleanupErr := idx.cleanupStale(ctx, state, walkedFiles, dirtyFolders, walkHadErrors)
 
 	var reconcileErrors []error
+	reconcileErrors = append(reconcileErrors, indexErrors...)
 	if cleanupErr != nil {
 		reconcileErrors = append(reconcileErrors, cleanupErr)
 	}
@@ -138,7 +146,7 @@ func (idx *Indexer) Run(ctx context.Context) error {
 // fields needed for change detection are transferred — skipping the bulky
 // `text` field cuts the scroll payload roughly 10x on a mature index.
 func (idx *Indexer) snapshotState(ctx context.Context) (map[string]*fileState, error) {
-	fields := []string{"file_path", "generation", "total_chunks", "chunk_index"}
+	fields := []string{"file_path", "generation", "total_chunks", "chunk_index", "file_hash", "layout", "publication"}
 	all, err := idx.chunks.ScrollAllWithPayload(ctx, nil, fields, false)
 	if err != nil {
 		return nil, err
@@ -166,6 +174,17 @@ func (idx *Indexer) snapshotState(ctx context.Context) (map[string]*fileState, e
 		if ci, ok := payloadInt(p.Payload["chunk_index"]); ok {
 			g.chunkIndexes[ci] = true
 		}
+		if hash, ok := p.Payload["file_hash"].(string); ok {
+			g.fileHash = hash
+		}
+		if layout, ok := p.Payload["layout"].(string); ok {
+			g.layout = layout
+		}
+		if ci, ok := payloadInt(p.Payload["chunk_index"]); ok && ci == 0 {
+			if descriptor, err := parsePublicationDescriptor(p.Payload["publication"]); err == nil && descriptor.Version == publicationVersion && descriptor.Generation == generation {
+				g.sealed = true
+			}
+		}
 		g.pointIDs = append(g.pointIDs, p.ID)
 	}
 	return state, nil
@@ -188,6 +207,7 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 	}
 
 	hash := fmt.Sprintf("%x", sha256.Sum256(content))
+	layout := chunkLayout(idx.maxBytes)
 	ext := strings.ToLower(filepath.Ext(path))
 	isMarkdown := ext == ".md" || ext == ".markdown"
 
@@ -210,16 +230,29 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 	// A generation is complete only when all expected indices are present.
 	// Legacy points have no generation payload and must be upgraded even when
 	// their file_hash happens to equal the current content hash.
-	if existing != nil && existing.complete(hash, total) {
-		oldIDs := existing.pointIDsExcept(hash)
-		if len(oldIDs) == 0 {
-			return false, nil
+	if existing != nil {
+		if current, ok := existing.complete(hash, layout, total); ok {
+			// The compact startup snapshot is only a change detector. Re-read and
+			// prove the seal before declaring an on-disk file unchanged; a stale
+			// or malformed descriptor must be repaired by a new generation, not
+			// silently keep the file invisible to strict readers.
+			if _, err := validateGeneration(ctx, idx.chunks, path, current, true); err == nil {
+				oldIDs := existing.pointIDsExcept(current)
+				if len(oldIDs) == 0 {
+					return false, nil
+				}
+				if err := idx.chunks.Delete(ctx, oldIDs); err != nil {
+					return false, fmt.Errorf("remove prior generations of %s: %w", path, err)
+				}
+				slog.Info("removed prior file generations", "path", path, "points", len(oldIDs))
+				return true, nil
+			}
 		}
-		if err := idx.chunks.Delete(ctx, oldIDs); err != nil {
-			return false, fmt.Errorf("remove prior generations of %s: %w", path, err)
-		}
-		slog.Info("removed prior file generations", "path", path, "points", len(oldIDs))
-		return true, nil
+	}
+
+	generation, err := newGenerationID(hash, layout)
+	if err != nil {
+		return false, fmt.Errorf("create generation for %s: %w", path, err)
 	}
 
 	// Batch-embed all chunks for this file in one shot (the embeddings client
@@ -239,7 +272,7 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 	now := time.Now().UTC().Format(time.RFC3339)
 	wroteAny := false
 	for i, c := range chunks {
-		id := chunkPointID(path, hash, i)
+		id := chunkPointID(path, generation, i)
 		payload := map[string]interface{}{
 			"text":         c.text,
 			"file_path":    path,
@@ -248,7 +281,8 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 			"total_chunks": total,
 			"heading":      c.heading,
 			"file_hash":    hash,
-			"generation":   hash,
+			"generation":   generation,
+			"layout":       layout,
 			"indexed_at":   now,
 		}
 		if err := idx.chunks.Upsert(ctx, qdrant.Point{ID: id, Vector: vecs[i], Payload: payload}); err != nil {
@@ -257,12 +291,38 @@ func (idx *Indexer) indexFile(ctx context.Context, path string, existing *fileSt
 		wroteAny = true
 	}
 
+	// A generation cannot be visible to ordinary reads until this exact
+	// readback is complete. In particular, never infer completion from our own
+	// successful upsert responses: Qdrant can accept only part of a batch during
+	// a transport failure.
+	validated, err := validateGeneration(ctx, idx.chunks, path, generation, false)
+	if err != nil {
+		return true, fmt.Errorf("validate unsealed generation for %s: %w", path, err)
+	}
+	chunkZero := validated.points[0]
+	descriptor := publicationDescriptor{
+		Version:       publicationVersion,
+		FilePath:      path,
+		Generation:    generation,
+		Layout:        layout,
+		FileHash:      hash,
+		SealedAt:      time.Now().UTC().Format(time.RFC3339Nano),
+		TotalChunks:   total,
+		OrderedDigest: validated.digest,
+	}
+	// The seal response is the publication commit. A lost/failed response is
+	// intentionally ambiguous: retain every older sealed generation and let a
+	// future indexing attempt create a fresh immutable generation.
+	if err := idx.chunks.Upsert(ctx, qdrant.Point{ID: chunkZero.ID, Vector: vecs[0], Payload: sealPayload(chunkZero.Payload, descriptor)}); err != nil {
+		return true, fmt.Errorf("seal generation for %s: %w", path, err)
+	}
+
 	// New and old IDs differ, so the previous complete generation remains
 	// queryable throughout embedding and every confirmed upsert. Only after the
 	// new generation is complete do we remove older/legacy points. If an upsert
 	// fails, the partial generation is safely overwritten on the next run.
 	if existing != nil {
-		oldIDs := existing.pointIDsExcept(hash)
+		oldIDs := existing.pointIDsExcept(generation)
 		if len(oldIDs) > 0 {
 			if err := idx.chunks.Delete(ctx, oldIDs); err != nil {
 				return true, fmt.Errorf("remove prior generations of %s: %w", path, err)
@@ -476,6 +536,21 @@ func chunkPointID(filePath, generation string, index int) string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", h[0:4], h[4:6], h[6:8], h[8:10], h[10:16])
 }
 
+func chunkLayout(maxBytes int) string {
+	return fmt.Sprintf("markdown-heading-paragraph-sentence-v1:max-bytes=%d", maxBytes)
+}
+
+func newGenerationID(fileHash, layout string) (string, error) {
+	var nonce [16]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return "", err
+	}
+	// The layout is part of the immutable identity, not merely a payload field;
+	// equal content rechunked under a new layout can never overwrite old points.
+	sum := sha256.Sum256([]byte(fileHash + "\x00" + layout + "\x00" + hex.EncodeToString(nonce[:])))
+	return "g1-" + hex.EncodeToString(sum[:]), nil
+}
+
 func payloadInt(value interface{}) (int, bool) {
 	switch n := value.(type) {
 	case float64:
@@ -494,20 +569,26 @@ func payloadInt(value interface{}) (int, bool) {
 	}
 }
 
-func (s *fileState) complete(generation string, total int) bool {
+func (s *fileState) complete(fileHash, layout string, total int) (string, bool) {
 	if s == nil {
-		return false
+		return "", false
 	}
-	g := s.generations[generation]
-	if g == nil || g.totalChunks != total || len(g.chunkIndexes) != total {
-		return false
-	}
-	for i := 0; i < total; i++ {
-		if !g.chunkIndexes[i] {
-			return false
+	for generation, g := range s.generations {
+		if g == nil || !g.sealed || g.fileHash != fileHash || g.layout != layout || g.totalChunks != total || len(g.chunkIndexes) != total {
+			continue
+		}
+		complete := true
+		for i := 0; i < total; i++ {
+			if !g.chunkIndexes[i] {
+				complete = false
+				break
+			}
+		}
+		if complete {
+			return generation, true
 		}
 	}
-	return true
+	return "", false
 }
 
 func (s *fileState) allPointIDs() []string {
